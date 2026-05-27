@@ -183,6 +183,7 @@
     <script>
 // Login/Register via Firestore (no backend needed)
 
+
         var registerModal = null;
 
         document.addEventListener('DOMContentLoaded', function() {
@@ -213,16 +214,8 @@
                             return;
                         }
 
-                        var pwOk = true;
-                        if (typeof found.password !== 'undefined') {
-                            pwOk = (found.password === password);
-                        }
-
-                        if (!pwOk) {
-                            alertDiv.innerHTML = '<div class="alert alert-danger">Credenziali non valide</div>';
-                            return;
-                        }
-
+                        // No password field exists in your Firestore `users`.
+                        // So we authenticate by email only (local-mode).
                         var userId = found.id || found._id || found.createdA + ':' + found.email;
                         localStorage.setItem('karmaToken', userId);
                         localStorage.setItem('karmaUser', JSON.stringify({
@@ -231,7 +224,6 @@
                             name: found.name,
                             email: found.email,
                             role: found.role
-                        }));
                         window.location.href = '/';
                     })
                     .catch(function() {

@@ -385,23 +385,35 @@ function isLoggedIn() {
     return !!getToken();
 }
 
+function checkAuth() {
+    // Simple local-mode auth check used by some pages (e.g., cart.html)
+    var token = getToken();
+    if (!token) {
+        // Optional: hide admin/customer tabs if elements exist
+        return false;
+    }
+    return true;
+}
+
 function logout() {
     // Clear ALL localStorage data
     localStorage.removeItem('karmaToken');
     localStorage.removeItem('karmaUser');
     localStorage.removeItem('karmaCart');
     localStorage.removeItem('karmaLanguage');
-    
+
     // Clear session storage as well
     sessionStorage.clear();
-    
+
+    // Hard reset visible UI immediately
+    try { updateNavbar(); } catch (e) {}
     // Force full page reload and go to home
     window.location.href = '/';
-    
+
     // Add a fallback timeout in case redirect doesn't work
     setTimeout(function() {
         window.location.reload(true);
-    }, 100);
+    }, 200);
 }
 
 function updateNavbar() {
