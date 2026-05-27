@@ -276,7 +276,7 @@ function addToCart(item) {
 
     // Show toast notification with translated message
     var cartMessage = getTranslatedCartMessage(item.name);
-    showToast('✅ ' + cartMessage);
+    showToast('$ ' + cartMessage);
 
     var btn = event.target;
     if (btn) {
