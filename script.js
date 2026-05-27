@@ -1,13 +1,9 @@
 // Karma Restaurant - Global JavaScript Functions
 
-// ==================== Firebase Firestore (replaces /api menu/categories) ====================
-// IMPORTANT: This file expects Firebase SDK to be loaded globally in the HTML:
-// - https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js
-// - https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js
-//
-// If you're missing these script tags, menu will not load.
+// ==================== Firebase client mode (no backend needed) ====================
+// We read Firestore directly from the browser.
 
-const firebaseConfig = {
+var firebaseConfig = {
   apiKey: "AIzaSyDiVQsFSeNpPmPspxMX0a1X6zIaF3PYv20",
   authDomain: "karma-restaurant-f6b92.firebaseapp.com",
   projectId: "karma-restaurant-f6b92",
@@ -16,60 +12,64 @@ const firebaseConfig = {
   appId: "1:859587902046:web:a82db78243a105cde592cf"
 };
 
-var _firebaseApp;
-try {
-  // firebase-app-compat exposes global `firebase`
-  _firebaseApp = firebase.apps && firebase.apps.length ? firebase.app() : firebase.initializeApp(firebaseConfig);
-} catch (e) {
-  console.error('Firebase init error:', e);
+// Load Firebase SDK globals from CDN scripts (included in the HTML pages).
+// firebase/app and firebase/firestore must be available.
+
+var _firebaseApp = null;
+var _firestore = null;
+
+function ensureFirebase() {
+    if (_firebaseApp && _firestore) return;
+
+    if (typeof firebase === 'undefined' || !firebase.initializeApp) {
+        throw new Error('Firebase SDK not loaded. Include Firebase scripts in the HTML.');
+    }
+
+    // firebase 9 compat: firebase.initializeApp is not available unless using compat build.
+    // So we try modern globals first (modular), then fall back to compat.
+    try {
+        // If modular build is loaded, we expect global "firebaseFirestore" etc is NOT available.
+        // In this project we rely on compat via global "firebase"; so initializeApp must exist.
+        _firebaseApp = firebase.apps && firebase.apps.length ? firebase.app() : firebase.initializeApp(firebaseConfig);
+        _firestore = firebase.firestore();
+        return;
+    } catch (e) {
+        throw e;
+    }
 }
 
-var db = null;
-try {
-  // firebase-firestore-compat exposes firebase.firestore()
-  db = firebase && firebase.firestore ? firebase.firestore() : null;
-} catch (e) {
-  console.error('Firestore init error:', e);
-}
-
+// Reads a full collection and maps docs to plain objects.
+// Expected return shape:
+// - categories: [{ _id, key, name }, ...]
+// - menu: [{ _id, name, price, image, description, category }, ...]
 function firestoreGetDocs(collectionName) {
-  return new Promise(function(resolve, reject) {
-    try {
-      if (!db) return reject(new Error('Firestore db not initialized'));
-      db.collection(collectionName).get()
-        .then(function(snapshot) {
-          var docs = [];
-          snapshot.forEach(function(doc) {
-            docs.push(Object.assign({_id: doc.id}, doc.data()));
-          });
-          resolve(docs);
-        })
-        .catch(reject);
-    } catch (e) {
-      reject(e);
-    }
-  });
+    ensureFirebase();
+    return _firestore.collection(collectionName).get().then(function(snapshot) {
+        var docs = [];
+        snapshot.forEach(function(doc) {
+            var data = doc.data() || {};
+            data._id = doc.id;
+            docs.push(data);
+        });
+        return docs;
+    });
 }
 
+// Reads a single menu item by document id.
 function firestoreGetMenuItemById(id) {
-  // Keep logic similar to previous code: return the item object or null
-  // Assumption (per your confirmation): Firestore document id matches previous _id.
-  return new Promise(function(resolve, reject) {
-    try {
-      if (!db) return reject(new Error('Firestore db not initialized'));
-      db.collection('menu').doc(id).get()
-        .then(function(doc) {
-          if (!doc.exists) return resolve(null);
-          resolve(Object.assign({_id: doc.id}, doc.data()));
-        })
-        .catch(reject);
-    } catch (e) {
-      reject(e);
-    }
-  });
+    ensureFirebase();
+    return _firestore.collection('menu').doc(id).get().then(function(doc) {
+        if (!doc.exists) return null;
+        var data = doc.data() || {};
+        data._id = doc.id;
+        return data;
+    });
 }
 
-// ==================== End Firebase Firestore ====================
+// ==================== End Firebase client mode ====================
+
+
+
 
 
 // Simple Language Toggle
@@ -826,7 +826,7 @@ function loadMenu() {
     // Show loading
     menuGrid.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">جاري التحميل...</span></div><p class="mt-3">جاري تحميل القائمة...</p></div>';
 
-    // Load categories first from Firestore
+    // Try API/Firestore first; if it fails (local dev), fallback to local data
     firestoreGetDocs('categories')
         .then(function(categories) {
             // Render category buttons (expects fields: key, name)
@@ -850,8 +850,20 @@ function loadMenu() {
             renderMenuItems(window.menuItems);
         })
         .catch(function(e) {
-            console.error('Error loading menu from Firestore:', e);
-            menuGrid.innerHTML = '<div class="col-12 text-center"><p>تعذر تحميل القائمة حالياً</p></div>';
+            console.warn('Firestore/API unavailable, using local fallback:', e);
+
+            var fallbackCats = getLocalFallbackCategories();
+            var catHtml = '<button class="filter-btn active" onclick="filterMenu(\'all\', this)">Tutto</button>';
+            for (var i = 0; i < fallbackCats.length; i++) {
+                var cat = fallbackCats[i];
+                catHtml += '<button class="filter-btn" onclick="filterMenu(\'' + cat.key + '\', this)">' + cat.name + '</button>';
+            }
+            if (categoriesContainer) {
+                categoriesContainer.innerHTML = catHtml;
+            }
+
+            window.menuItems = localFallbackMenu;
+            renderMenuItems(localFallbackMenu);
         });
 }
 
