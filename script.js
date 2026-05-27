@@ -43,18 +43,22 @@ function ensureFirebase() {
 // - categories: [{ _id, key, name }, ...]
 // - menu: [{ _id, name, price, image, description, category }, ...]
 function firestoreGetDocs(collectionName) {
-    ensureFirebase();
-    // If Firebase is initialized but emulator/network fails, this will throw and be caught by callers.
-    return _firestore.collection(collectionName).get().then(function(snapshot) {
-        var docs = [];
-        snapshot.forEach(function(doc) {
-            var data = doc.data() || {};
-            data._id = doc.id;
-            docs.push(data);
+    try {
+        ensureFirebase();
+        return _firestore.collection(collectionName).get().then(function(snapshot) {
+            var docs = [];
+            snapshot.forEach(function(doc) {
+                var data = doc.data() || {};
+                data._id = doc.id;
+                docs.push(data);
+            });
+            return docs;
         });
-        return docs;
-    });
+    } catch (e) {
+        return Promise.reject(e);
+    }
 }
+
 
 // Reads a single menu item by document id.
 function firestoreGetMenuItemById(id) {
@@ -946,6 +950,8 @@ function renderMenuItems(items) {
 
 // Filter menu by category
 function filterMenu(category, btn) {
+    // Ensure inline onclick="filterMenu(...)" works reliably
+    window.filterMenu = filterMenu;
     // Update active button
     var buttons = document.querySelectorAll('.filter-btn');
     for (var i = 0; i < buttons.length; i++) {
