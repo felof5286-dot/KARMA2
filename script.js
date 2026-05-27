@@ -44,6 +44,7 @@ function ensureFirebase() {
 // - menu: [{ _id, name, price, image, description, category }, ...]
 function firestoreGetDocs(collectionName) {
     ensureFirebase();
+    // If Firebase is initialized but emulator/network fails, this will throw and be caught by callers.
     return _firestore.collection(collectionName).get().then(function(snapshot) {
         var docs = [];
         snapshot.forEach(function(doc) {
@@ -65,6 +66,7 @@ function firestoreGetMenuItemById(id) {
         return data;
     });
 }
+
 
 // ==================== End Firebase client mode ====================
 
@@ -816,17 +818,61 @@ function showAlert(elementId, message, type) {
     }
 }
 
+// Local fallback data for when neither /api nor Firestore is available.
+// (Used especially on Netlify if backend functions are not deployed.)
+var localFallbackCategories = [
+    { _id: 'all', key: 'all', name: 'Tutto' },
+    { _id: 'pizza', key: 'pizza', name: 'Pizza' },
+    { _id: 'pasta', key: 'pasta', name: 'Pasta' },
+    { _id: 'secondi', key: 'secondi', name: 'Secondi' }
+];
+
+var localFallbackMenu = [
+    {
+        _id: 'margherita-fallback',
+        name: 'Margherita',
+        price: 7.50,
+        image: 'https://via.placeholder.com/300x200?text=Margherita',
+        description: 'Pomodoro, mozzarella e basilico.',
+        category: 'pizza'
+    },
+    {
+        _id: 'diavola-fallback',
+        name: 'Diavola',
+        price: 9.00,
+        image: 'https://via.placeholder.com/300x200?text=Diavola',
+        description: 'Pomodoro, mozzarella e salame piccante.',
+        category: 'pizza'
+    },
+    {
+        _id: 'carbonara-fallback',
+        name: 'Carbonara',
+        price: 10.50,
+        image: 'https://via.placeholder.com/300x200?text=Carbonara',
+        description: 'Guanciale, pecorino e pepe nero.',
+        category: 'pasta'
+    },
+    {
+        _id: 'alfredo-fallback',
+        name: 'Alfredo',
+        price: 9.50,
+        image: 'https://via.placeholder.com/300x200?text=Alfredo',
+        description: 'Crema, parmigiano e noce moscata.',
+        category: 'pasta'
+    }
+];
+
 // Load full menu with categories
 function loadMenu() {
     var menuGrid = document.getElementById('menuGrid');
     var categoriesContainer = document.getElementById('categoriesContainer');
-    
+
     if (!menuGrid) return;
-    
+
     // Show loading
     menuGrid.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">جاري التحميل...</span></div><p class="mt-3">جاري تحميل القائمة...</p></div>';
 
-    // Try API/Firestore first; if it fails (local dev), fallback to local data
+    // Try Firestore first; if it fails (no SDK / no backend / not deployed), fallback to local data.
     firestoreGetDocs('categories')
         .then(function(categories) {
             // Render category buttons (expects fields: key, name)
@@ -840,22 +886,21 @@ function loadMenu() {
             if (categoriesContainer) {
                 categoriesContainer.innerHTML = catHtml;
             }
-            
+
             // Then load menu items from Firestore
             return firestoreGetDocs('menu');
         })
         .then(function(items) {
-            // Keep same behavior as before
             window.menuItems = items || [];
             renderMenuItems(window.menuItems);
         })
         .catch(function(e) {
-            console.warn('Firestore/API unavailable, using local fallback:', e);
+            console.warn('Firestore unavailable, using local fallback:', e);
 
-            var fallbackCats = getLocalFallbackCategories();
             var catHtml = '<button class="filter-btn active" onclick="filterMenu(\'all\', this)">Tutto</button>';
-            for (var i = 0; i < fallbackCats.length; i++) {
-                var cat = fallbackCats[i];
+            for (var i = 0; i < localFallbackCategories.length; i++) {
+                var cat = localFallbackCategories[i];
+                if (cat.key === 'all') continue;
                 catHtml += '<button class="filter-btn" onclick="filterMenu(\'' + cat.key + '\', this)">' + cat.name + '</button>';
             }
             if (categoriesContainer) {
@@ -866,6 +911,7 @@ function loadMenu() {
             renderMenuItems(localFallbackMenu);
         });
 }
+
 
 // Render menu items
 function renderMenuItems(items) {
