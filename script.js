@@ -1,5 +1,77 @@
 // Karma Restaurant - Global JavaScript Functions
 
+// ==================== Firebase Firestore (replaces /api menu/categories) ====================
+// IMPORTANT: This file expects Firebase SDK to be loaded globally in the HTML:
+// - https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js
+// - https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js
+//
+// If you're missing these script tags, menu will not load.
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDiVQsFSeNpPmPspxMX0a1X6zIaF3PYv20",
+  authDomain: "karma-restaurant-f6b92.firebaseapp.com",
+  projectId: "karma-restaurant-f6b92",
+  storageBucket: "karma-restaurant-f6b92.firebasestorage.app",
+  messagingSenderId: "859587902046",
+  appId: "1:859587902046:web:a82db78243a105cde592cf"
+};
+
+var _firebaseApp;
+try {
+  // firebase-app-compat exposes global `firebase`
+  _firebaseApp = firebase.apps && firebase.apps.length ? firebase.app() : firebase.initializeApp(firebaseConfig);
+} catch (e) {
+  console.error('Firebase init error:', e);
+}
+
+var db = null;
+try {
+  // firebase-firestore-compat exposes firebase.firestore()
+  db = firebase && firebase.firestore ? firebase.firestore() : null;
+} catch (e) {
+  console.error('Firestore init error:', e);
+}
+
+function firestoreGetDocs(collectionName) {
+  return new Promise(function(resolve, reject) {
+    try {
+      if (!db) return reject(new Error('Firestore db not initialized'));
+      db.collection(collectionName).get()
+        .then(function(snapshot) {
+          var docs = [];
+          snapshot.forEach(function(doc) {
+            docs.push(Object.assign({_id: doc.id}, doc.data()));
+          });
+          resolve(docs);
+        })
+        .catch(reject);
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
+function firestoreGetMenuItemById(id) {
+  // Keep logic similar to previous code: return the item object or null
+  // Assumption (per your confirmation): Firestore document id matches previous _id.
+  return new Promise(function(resolve, reject) {
+    try {
+      if (!db) return reject(new Error('Firestore db not initialized'));
+      db.collection('menu').doc(id).get()
+        .then(function(doc) {
+          if (!doc.exists) return resolve(null);
+          resolve(Object.assign({_id: doc.id}, doc.data()));
+        })
+        .catch(reject);
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
+// ==================== End Firebase Firestore ====================
+
+
 // Simple Language Toggle
 var isItalian = false;
 
@@ -171,10 +243,8 @@ function getApiBaseUrl() {
 }
 
 function addToCartById(id) {
-    fetch(getApiBaseUrl() + '/menu')
-        .then(function(r) { return r.json(); })
-        .then(function(items) {
-            var item = items.find(function(i) { return i._id === id; });
+    firestoreGetMenuItemById(id)
+        .then(function(item) {
             if (item) {
                 addToCart(item);
             }
@@ -755,25 +825,34 @@ function loadMenu() {
     
     // Show loading
     menuGrid.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">جاري التحميل...</span></div><p class="mt-3">جاري تحميل القائمة...</p></div>';
-    
-    // Load categories first
-    fetch(getApiBaseUrl() + '/categories')
-        .then(function(r) { return r.json(); })
+
+    // Load categories first from Firestore
+    firestoreGetDocs('categories')
         .then(function(categories) {
-            // Render category buttons
+            // Render category buttons (expects fields: key, name)
             var catHtml = '<button class="filter-btn active" onclick="filterMenu(\'all\', this)">Tutto</button>';
             for (var i = 0; i < categories.length; i++) {
                 var cat = categories[i];
-                catHtml += '<button class="filter-btn" onclick="filterMenu(\'' + cat.key + '\', this)">' + cat.name + '</button>';
+                var key = cat.key || cat._id;
+                var name = cat.name || key;
+                catHtml += '<button class="filter-btn" onclick="filterMenu(\'' + key + '\', this)">' + name + '</button>';
             }
             if (categoriesContainer) {
                 categoriesContainer.innerHTML = catHtml;
             }
             
-            // Then load menu items
-            return fetch(getApiBaseUrl() + '/menu');
+            // Then load menu items from Firestore
+            return firestoreGetDocs('menu');
         })
-        .then(function(r) { return r.json(); })
+        .then(function(items) {
+            // Keep same behavior as before
+            window.menuItems = items || [];
+            renderMenuItems(window.menuItems);
+        })
+        .catch(function(e) {
+            console.error('Error loading menu from Firestore:', e);
+            menuGrid.innerHTML = '<div class="col-12 text-center"><p>تعذر تحميل القائمة حالياً</p></div>';
+        });
 
 // Render menu items
 function renderMenuItems(items) {
