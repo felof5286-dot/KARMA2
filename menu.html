@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="it" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu - Karma Restaurant</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Cairo:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold: #D4AF37;
+            --gold-light: #F4E4BA;
+            --dark-red: #8B0000;
+            --black: #0D0D0D;
+            --cream: #FFF8E7;
+        }
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: var(--cream);
+        }
+        .font-playfair {
+            font-family: 'Playfair Display', serif;
+        }
+        .menu-card {
+            border: none;
+            border-radius: 15px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            height: 100%;
+        }
+        .menu-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+        }
+        .menu-card img {
+            height: 220px;
+            object-fit: cover;
+        }
+        .card-title {
+            font-family: 'Playfair Display', serif;
+            font-weight: 700;
+            color: var(--black);
+        }
+        .card-text {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        .price-tag {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--dark-red);
+        }
+        .filter-btn {
+            border: 2px solid var(--gold);
+            color: var(--black);
+            border-radius: 25px;
+            padding: 10px 25px;
+            margin: 5px;
+            font-weight: 600;
+            transition: all 0.3s;
+            background: white;
+        }
+        .filter-btn:hover, .filter-btn.active {
+            background: var(--gold);
+            color: white;
+        }
+        .hero-section {
+            background: linear-gradient(135deg, var(--black) 0%, var(--dark-red) 100%);
+            color: white;
+            padding: 80px 0;
+            margin-bottom: 40px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand font-playfair" href="/"><i class="fas fa-utensils"></i> Karma</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/menu">Menu</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/orders"><i class="fas fa-clipboard-list"></i> I Miei Ordini</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/cart"><i class="fas fa-shopping-cart"></i> Carrello <span id="cartCountNav" class="badge bg-danger">0</span></a></li>
+                </ul>
+                <ul class="navbar-nav" id="authNav"></ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Cart Notification Modal -->
+    <div class="modal fade" id="cartNotificationModal" tabindex="-1" aria-labelledby="cartNotificationModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body text-center">
+                    <i class="fas fa-check-circle text-success" style="font-size: 3rem;"></i>
+                    <h5 class="mt-3" id="notificationMessage"></h5>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="hero-section text-center">
+        <div class="container">
+            <h1 class="font-playfair display-4 mb-3"><i class="fas fa-star"></i> Il Nostro Menu Raffinato</h1>
+            <p class="lead">Offriamo le migliori specialita italiane autentiche</p>
+        </div>
+    </section>
+
+    <!-- Menu Section -->
+    <section class="py-5">
+        <div class="container">
+            <!-- Category Filters -->
+            <div class="text-center mb-5" id="categoriesContainer">
+                <button class="filter-btn active" onclick="filterMenu('all', this)">Tutto</button>
+                <!-- Categories loaded via API -->
+            </div>
+
+            <!-- Menu Grid -->
+            <div class="row" id="menuGrid">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Caricamento...</span>
+                    </div>
+                    <p class="mt-3">Caricamento menu...</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container text-center">
+            <p class="mb-0 font-playfair display-6">Karma Restaurant</p>
+            <small>Ristorante Italiano Karma</small>
+            <hr class="my-3">
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <p class="mb-1"><i class="fas fa-phone me-2"></i> 0331 027171 | 320 1388633</p>
+                    <p class="mb-1"><i class="fas fa-envelope me-2"></i> karmaristorantepizzeria@gmail.com</p>
+                    <p class="mb-0"><a href="https://maps.app.goo.gl/FyUP3TR2gaEEiw648" target="_blank" rel="noopener" class="text-warning text-decoration-none"><i class="fas fa-map-marker-alt me-2"></i>La nostra posizione</a></p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/script.js"></script>
+    <script>
+        // Load menu on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateNavbarWithoutLang();
+            updateCartCount();
+            loadMenu();
+        });
+    </script>
+</body>
+</html>

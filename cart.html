@@ -1,0 +1,521 @@
+
+<!DOCTYPE html>
+<html lang="it" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carrello - Karma Restaurant</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f8f9fa; }
+        .cart-item { background: white; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .total-section { background: white; border-radius: 15px; padding: 25px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); position: sticky; top: 20px; }
+        .empty-cart { text-align: center; padding: 50px; }
+        .empty-cart i { font-size: 5rem; color: #ddd; }
+        .cart-img { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; }
+        .item-name { font-weight: bold; font-size: 1.1rem; }
+        .item-price { color: #8B0000; font-weight: bold; }
+        .order-card { background: white; border-radius: 15px; padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 15px rgba(0,0,0,0.08); }
+        .notification-bell { position: relative; cursor: pointer; font-size: 1.3rem; padding: 8px 15px; color: white; }
+        .notification-badge { position: absolute; top: 0; right: 5px; background: #dc3545; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 11px; display: flex; align-items: center; justify-content: center; }
+        .notification-dropdown { position: fixed; top: 60px; right: 20px; width: 350px; max-height: 450px; background: white; border-radius: 15px; box-shadow: 0 5px 30px rgba(0,0,0,0.2); z-index: 2000; overflow: hidden; }
+        .notification-header { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; }
+        .notification-list { max-height: 380px; overflow-y: auto; }
+        .notification-item { padding: 15px; border-bottom: 1px solid #f0f0f0; }
+        .notification-item.unread { background: #e3f2fd; border-right: 4px solid #2196f3; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/"><i class="fas fa-utensils"></i> Karma Restaurant</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-label="Apri menu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/menu">Menu</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/cart"><i class="fas fa-shopping-cart"></i> Carrello <span id="cartCountNav" class="badge bg-danger">0</span></a></li>
+                    <li class="nav-item"><a class="nav-link" href="/orders">I Miei Ordini</a></li>
+                </ul>
+                <ul class="navbar-nav" id="authNav"></ul>
+                <ul class="navbar-nav" id="notificationNav" style="display:none;">
+                    <li class="nav-item">
+                        <div class="notification-bell" onclick="toggleNotificationDropdown()">
+                            <i class="fas fa-bell"></i>
+                            <span id="notificationCountBadge" class="notification-badge" style="display:none;">0</span>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div id="notificationDropdown" class="notification-dropdown" style="display:none;">
+        <div class="notification-header">
+            <h6 class="mb-0"><i class="fas fa-bell"></i> Notifiche Ordini</h6>
+            <button class="btn btn-sm btn-outline-secondary" onclick="clearUserNotifications()">Cancella Tutto</button>
+        </div>
+        <div id="notificationList" class="notification-list">
+            <div class="text-center py-4 text-muted">
+                <i class="fas fa-bell-slash mb-2" style="font-size: 2rem;"></i>
+                <p class="mb-0">Nessuna notifica</p>
+            </div>
+        </div>
+    </div>
+
+    <section class="py-5">
+        <div class="container">
+            <ul class="nav nav-tabs mb-4" id="mainTabs">
+                <li class="nav-item">
+                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#cartTab">
+                        <i class="fas fa-shopping-cart"></i> Carrello
+                    </button>
+                </li>
+                <li class="nav-item" id="myOrdersTabItem" style="display:none;">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#myOrdersTab">
+                        <i class="fas fa-list"></i> I Miei Ordini
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="cartTab">
+                    <h2 class="text-center mb-4"><i class="fas fa-shopping-cart"></i> Il Tuo Carrello</h2>
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <div id="cartItems"></div>
+                            <div id="emptyCart" class="empty-cart">
+                                <i class="fas fa-shopping-basket"></i>
+                                <h3 class="mt-3">Carrello Vuoto</h3>
+                                <p class="text-muted">Sfoglia il nostro menu e aggiungi i tuoi piatti preferiti</p>
+                                <a href="/menu" class="btn btn-primary"><i class="fas fa-book-open"></i> Ordina Ora</a>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="total-section">
+                                <h4 class="mb-4">Riepilogo Ordine</h4>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Subtotale</span>
+                                    <span id="subtotal">EUR 0.00</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Consegna</span>
+                                    <span class="text-success">GRATIS</span>
+                                </div>
+                                <hr>
+                                <div class="d-flex justify-content-between mb-4">
+                                    <strong>Totale</strong>
+                                    <strong id="total" style="color: #8B0000; font-size: 1.3rem;">EUR 0.00</strong>
+                                </div>
+                                <button class="btn btn-primary w-100" id="checkoutBtn" disabled onclick="showCheckoutModal()">
+                                    <i class="fas fa-credit-card"></i> Completa Ordine
+                                </button>
+                                <a href="/menu" class="btn btn-outline-secondary w-100 mt-2">
+                                    <i class="fas fa-plus"></i> Aggiungi Altri
+                                </a>
+                                <button class="btn btn-outline-danger w-100 mt-2" onclick="clearCart()">
+                                    <i class="fas fa-trash"></i> Svuota Carrello
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="myOrdersTab">
+                    <h2 class="text-center mb-4"><i class="fas fa-clipboard-list"></i> I Tuoi Ordini</h2>
+                    <div id="myOrdersList"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="modal fade" id="checkoutModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Completa Ordine</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal">x</button>
+                </div>
+                <div class="modal-body">
+                    <div id="loginRequired" class="alert alert-warning" style="display:none;">
+                        <i class="fas fa-exclamation-triangle"></i> Devi accedere per completare l'ordine
+                        <a href="/login" class="btn btn-primary btn-sm mt-2">Accedi</a>
+                    </div>
+                    <form id="checkoutForm" style="display:block;">
+                        <div class="mb-3">
+                            <label class="form-label">Nome</label>
+                            <input type="text" class="form-control" id="customerName" required aria-label="Nome">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Telefono</label>
+                            <input type="tel" class="form-control" id="customerPhone" required aria-label="Telefono">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Indirizzo</label>
+                            <textarea class="form-control" id="customerAddress" rows="3" required aria-label="Indirizzo"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Metodo di Pagamento</label>
+                            <div class="alert alert-info mb-0">
+                                <i class="fas fa-money-bill-wave"></i> Pagamento solo in contanti alla consegna
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Note</label>
+                            <textarea class="form-control" id="customerNotes" rows="2" aria-label="Note"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="button" class="btn btn-primary" onclick="handleCheckout()">
+                        <i class="fas fa-check"></i> Conferma Ordine
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="successModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border: none; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+                <div class="text-center py-5" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+                    <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52" style="width: 100px; height: 100px;">
+                        <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none" stroke="white" stroke-width="3"/>
+                        <path class="checkmark-check" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+                    </svg>
+                    <h3 class="text-white fw-bold mb-2 mt-3">Ordine Effettuato!</h3>
+                    <p class="text-white">Grazie per la tua fiducia</p>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <p class="text-muted mb-1">Numero Ordine</p>
+                    <h4 class="text-primary fw-bold" id="orderNumber"></h4>
+                    <hr>
+                    <p class="text-muted"><i class="fas fa-heart text-danger"></i> Buon appetito!</p>
+                </div>
+                <div class="modal-footer justify-content-center border-0 pb-4">
+                    <a href="/" class="btn btn-primary btn-lg px-5" style="border-radius: 50px;">Torna Home</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .checkmark-circle { stroke-dasharray: 166; stroke-dashoffset: 166; stroke-width: 3; stroke-miterlimit: 10; stroke: white; fill: none; animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards; }
+        .checkmark { width: 100px; height: 100px; stroke: white; stroke-width: 3; stroke-miterlimit: 10; fill: none; animation: scale .3s cubic-bezier(0.65, 0, 0.45, 1) both; }
+        .checkmark-check { transform-origin: 50% 50%; stroke-dasharray: 48; stroke-dashoffset: 48; animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.4s forwards; }
+        @keyframes stroke { 100% { stroke-dashoffset: 0; } }
+        @keyframes scale { 0%, 100% { transform: none; } 50% { transform: scale3d(1.1, 1.1, 1); } }
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/script.js"></script>
+    <script>
+        // API base URL - points to local/hosted backend
+        function getApiBaseUrl() {
+            return '/api';
+        }
+
+        function getOrderStatusInfo(status) {
+            var info = {
+                'pending': { title: 'Nuovo Ordine', class: 'bg-secondary text-white' },
+                'preparing': { title: 'In Preparazione', class: 'bg-primary text-white' },
+                'ready': { title: 'Pronto', class: 'bg-success text-white' },
+                'delivery': { title: 'In Consegna', class: 'bg-warning text-dark' },
+                'delivered': { title: 'Consegnato', class: 'bg-success text-white' },
+                'cancelled': { title: 'Annullato', class: 'bg-danger text-white' }
+            };
+            return info[status] || { title: 'In Attesa', class: 'bg-secondary text-white' };
+        }
+
+        function loadMyOrders() {
+            var token = getToken();
+            if (!token) {
+                document.getElementById('myOrdersList').innerHTML = '<div class="text-center py-5"><i class="fas fa-user-lock text-muted mb-3" style="font-size: 3rem;"></i><p class="text-muted">Devi accedere per vedere i tuoi ordini</p><a href="/login" class="btn btn-primary">Accedi</a></div>';
+                return;
+            }
+            fetch(getApiBaseUrl() + '/orders', { headers: { 'Authorization': 'Bearer ' + token } })
+            .then(function(r) { return r.json(); })
+            .then(function(orders) {
+                if (orders.error || !orders || orders.length === 0) {
+                    document.getElementById('myOrdersList').innerHTML = '<div class="text-center py-5"><i class="fas fa-clipboard-list text-muted mb-3" style="font-size: 3rem;"></i><p class="text-muted">Nessun ordine precedente</p><a href="/menu" class="btn btn-primary">Ordina Ora</a></div>';
+                    return;
+                }
+                orders.sort(function(a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
+                var html = '';
+                for (var i = 0; i < orders.length; i++) {
+                    var order = orders[i];
+                    var statusInfo = getOrderStatusInfo(order.status);
+                    var date = new Date(order.createdAt).toLocaleString('it-IT');
+                    html += '<div class="order-card">' +
+                        '<div class="d-flex justify-content-between align-items-start mb-3">' +
+                        '<div><h5 class="mb-1"><i class="fas fa-receipt text-primary"></i> ' + order.orderId + '</h5>' +
+                        '<small class="text-muted">' + date + '</small></div>' +
+                        '<span class="badge ' + statusInfo.class + '">' + statusInfo.title + '</span></div>' +
+                        '<div class="row mb-3"><div class="col-md-6">' +
+                        '<p class="mb-1"><strong>Nome:</strong> ' + order.customerName + '</p>' +
+                        '<p class="mb-1"><strong>Telefono:</strong> ' + order.customerPhone + '</p></div>' +
+                        '<div class="col-md-6"><p class="mb-1"><strong>Indirizzo:</strong> ' + order.customerAddress + '</p>' +
+                        '<p class="mb-0"><strong>Pagamento:</strong> ' + (order.paymentMethod === 'visa' ? 'Carta' : 'Contanti') + '</p></div></div>' +
+                        '<div class="border-top pt-3"><h6 class="mb-2">Piatti:</h6>';
+                    if (order.items && order.items.length > 0) {
+                        html += '<ul class="list-unstyled mb-3">';
+                        for (var j = 0; j < order.items.length; j++) {
+                            var item = order.items[j];
+                            html += '<li><span class="badge bg-secondary me-2">' + (item.quantity || 1) + 'x</span> ' + (item.name || 'Piatto') + ' <span class="text-muted">EUR ' + ((item.price || 0) * (item.quantity || 1)).toFixed(2) + '</span></li>';
+                        }
+                        html += '</ul>';
+                    }
+                    html += '<div class="d-flex justify-content-between align-items-center">' +
+                        '<h4 class="mb-0" style="color: #8B0000;"><strong>Totale: EUR ' + (order.total || 0).toFixed(2) + '</strong></h4></div></div></div>';
+                }
+                document.getElementById('myOrdersList').innerHTML = html;
+            })
+            .catch(function() {
+                document.getElementById('myOrdersList').innerHTML = '<div class="alert alert-danger">Errore nel caricamento degli ordini</div>';
+            });
+        }
+
+        document.querySelectorAll('button[data-bs-target="#myOrdersTab"]').forEach(function(btn) {
+            btn.addEventListener('shown.bs.tab', function() { loadMyOrders(); });
+        });
+
+        function renderCart() {
+            var cartItemsEl = document.getElementById('cartItems');
+            var emptyCartEl = document.getElementById('emptyCart');
+            var checkoutBtn = document.getElementById('checkoutBtn');
+            var cart = getCart();
+            updateCartCount();
+            if (cart.length === 0) {
+                cartItemsEl.innerHTML = '';
+                emptyCartEl.style.display = 'block';
+                checkoutBtn.disabled = true;
+                document.getElementById('subtotal').textContent = 'EUR 0.00';
+                document.getElementById('total').textContent = 'EUR 0.00';
+                return;
+            }
+            emptyCartEl.style.display = 'none';
+            checkoutBtn.disabled = false;
+            var html = '';
+            var total = 0;
+            for (var i = 0; i < cart.length; i++) {
+                var item = cart[i];
+                var itemTotal = (item.price || 0) * (item.quantity || 1);
+                total += itemTotal;
+                html += '<div class="cart-item">' +
+                    '<div class="row align-items-center">' +
+                    '<div class="col-md-2"><img src="' + (item.image || 'https://via.placeholder.com/80') + '" class="cart-img" alt="' + item.name + '"></div>' +
+                    '<div class="col-md-4"><div class="item-name">' + item.name + '</div><small class="text-muted">Quantita: ' + (item.quantity || 1) + '</small></div>' +
+                    '<div class="col-md-3 text-center"><span class="item-price">EUR ' + itemTotal.toFixed(2) + '</span></div>' +
+                    '<div class="col-md-3 text-end"><div class="btn-group">' +
+                    '<button class="btn btn-secondary btn-sm" onclick="updateQuantity(' + i + ', -1)">-</button>' +
+                    '<button class="btn btn-danger btn-sm" onclick="removeFromCart(' + i + ')"><i class="fas fa-trash"></i></button>' +
+                    '<button class="btn btn-success btn-sm" onclick="updateQuantity(' + i + ', 1)">+</button>' +
+                    '</div></div></div></div>';
+            }
+            cartItemsEl.innerHTML = html;
+            document.getElementById('subtotal').textContent = 'EUR ' + total.toFixed(2);
+            document.getElementById('total').textContent = 'EUR ' + total.toFixed(2);
+        }
+
+        function showCheckoutModal() {
+            var token = getToken();
+            var user = getUser();
+            if (!token || !user) {
+                document.getElementById('loginRequired').style.display = 'block';
+                document.getElementById('checkoutForm').style.display = 'none';
+            } else {
+                document.getElementById('loginRequired').style.display = 'none';
+                document.getElementById('checkoutForm').style.display = 'block';
+                document.getElementById('customerName').value = user.name || '';
+            }
+            new bootstrap.Modal(document.getElementById('checkoutModal')).show();
+        }
+
+        function handleCheckout() {
+            var token = getToken();
+            var user = getUser();
+            if (!token || !user) { window.location.href = '/login'; return; }
+            var customerName = document.getElementById('customerName').value;
+            var customerPhone = document.getElementById('customerPhone').value;
+            var customerAddress = document.getElementById('customerAddress').value;
+            var customerNotes = document.getElementById('customerNotes').value;
+            // Payment is always cash now
+            var paymentMethod = 'cash';
+            if (!customerName || !customerPhone || !customerAddress) { alert('Compila tutti i campi richiesti'); return; }
+            var cart = getCart();
+            var total = getCartTotal();
+            var formattedItems = cart.map(function(item) {
+                return { item: item._id, name: item.name, price: item.price || 0, quantity: item.quantity || 1, total: (item.price || 0) * (item.quantity || 1) };
+            });
+            var orderData = { customerName: customerName, customerPhone: customerPhone, customerAddress: customerAddress, customerNotes: customerNotes, paymentMethod: paymentMethod, items: formattedItems, total: total, userId: user._id || user.id };
+            fetch(getApiBaseUrl() + '/orders', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify(orderData) })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.error) { alert(data.error); return; }
+                localStorage.removeItem('karmaCart');
+                renderCart();
+                document.getElementById('orderNumber').textContent = data.orderId || 'ORD-' + Date.now();
+                new bootstrap.Modal(document.getElementById('successModal')).show();
+            })
+            .catch(function() { alert('Errore durante l\'ordine. Riprova.'); });
+        }
+
+        function updateQuantity(index, change) {
+            var cart = getCart();
+            if (cart[index]) {
+                cart[index].quantity = (cart[index].quantity || 1) + change;
+                if (cart[index].quantity <= 0) { cart.splice(index, 1); }
+                saveCart(cart);
+                renderCart();
+            }
+        }
+
+        function removeFromCart(index) {
+            var cart = getCart();
+            if (cart[index]) { cart.splice(index, 1); saveCart(cart); renderCart(); }
+        }
+
+        function clearCart() { localStorage.removeItem('karmaCart'); renderCart(); }
+
+        function toggleNotificationDropdown() {
+            var dropdown = document.getElementById('notificationDropdown');
+            dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+            if (dropdown.style.display === 'block') { loadUserNotifications(); }
+        }
+
+        function loadUserNotifications() {
+            var token = getToken();
+            if (!token) return;
+            fetch(getApiBaseUrl() + '/notifications', { headers: { 'Authorization': 'Bearer ' + token } })
+            .then(function(r) { return r.json(); })
+            .then(function(notifications) {
+                var list = document.getElementById('notificationList');
+                var badge = document.getElementById('notificationCountBadge');
+                
+                // API returns array directly
+                if (!notifications || notifications.length === 0) {
+                    list.innerHTML = '<div class="text-center py-4 text-muted"><i class="fas fa-bell-slash mb-2" style="font-size: 2rem;"></i><p class="mb-0">Nessuna notifica</p></div>';
+                    badge.style.display = 'none';
+                    return;
+                }
+                
+                var unreadCount = notifications.filter(function(n) { return !n.read; }).length;
+                badge.textContent = unreadCount;
+                badge.style.display = unreadCount > 0 ? 'flex' : 'none';
+                
+                var html = '';
+                notifications.forEach(function(n) {
+                    var statusInfo = getOrderStatusInfo(n.status);
+                    html += '<div class="notification-item ' + (n.read ? '' : 'unread') + '" onclick="handleNotificationClick(\'' + (n.orderId || '') + '\')">' +
+                        '<div><strong>Ordine: ' + (n.orderId || 'N/A') + '</strong></div>' +
+                        '<div class="mb-1">' + (n.message || '') + '</div>' +
+                        '<span class="badge ' + statusInfo.class + '">' + statusInfo.title + '</span>' +
+                        '<div class="text-muted small">' + new Date(n.createdAt).toLocaleString('it-IT') + '</div></div>';
+                });
+                list.innerHTML = html;
+            })
+            .catch(function(e) {
+                console.error('Error loading notifications:', e);
+            });
+        }
+
+        function handleNotificationClick(orderId) {
+            if (orderId) {
+                window.location.href = '/orders?id=' + orderId;
+            }
+        }
+
+        function clearUserNotifications() {
+            var token = getToken();
+            if (!token) return;
+            fetch('/api/notifications', { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } })
+            .then(function(r) { return r.json(); })
+            .then(function() {
+                document.getElementById('notificationList').innerHTML = '<div class="text-center py-4 text-muted"><i class="fas fa-bell-slash mb-2" style="font-size: 2rem;"></i><p class="mb-0">Nessuna notifica</p></div>';
+                document.getElementById('notificationCountBadge').style.display = 'none';
+            })
+            .catch(function(e) {
+                console.error('Error clearing notifications:', e);
+            });
+        }
+
+        // SSE connection for real-time notifications
+        var sseConnection = null;
+
+        function connectNotificationSSE() {
+            var token = getToken();
+            if (!token) return;
+            
+            // Close existing connection
+            if (sseConnection) {
+                sseConnection.close();
+            }
+            
+            sseConnection = new EventSource(getApiBaseUrl() + '/notifications/customer?token=' + encodeURIComponent(token));
+            
+            sseConnection.onopen = function() {
+                console.log('SSE connection established');
+            };
+            
+            sseConnection.onmessage = function(e) {
+                try {
+                    var data = JSON.parse(e.data);
+                    if (data.type === 'order_status_update' && data.data) {
+                        showNotificationToast('🔔 ' + (data.data.message || 'Aggiornamento ordine'));
+                        loadUserNotifications();
+                    }
+                } catch (err) {
+                    console.error('SSE parse error:', err);
+                }
+            };
+            
+            sseConnection.onerror = function() {
+                console.log('SSE connection error, retrying in 5s...');
+                sseConnection.close();
+                setTimeout(function() {
+                    connectNotificationSSE();
+                }, 5000);
+            };
+        }
+
+        function showNotificationToast(message) {
+            var existing = document.getElementById('notificationToast');
+            if (existing) existing.remove();
+            
+            var toast = document.createElement('div');
+            toast.id = 'notificationToast';
+            toast.style.cssText = 'position:fixed;top:80px;right:20px;background:#28a745;color:white;padding:15px 25px;border-radius:10px;z-index:9999;font-weight:bold;box-shadow:0 4px 12px rgba(0,0,0,0.3);max-width:350px;animation:slideIn 0.3s ease;';
+            toast.innerHTML = '<i class="fas fa-bell me-2"></i>' + message;
+            
+            var style = document.createElement('style');
+            style.textContent = '@keyframes slideIn { from { opacity:0; transform:translateX(50px); } to { opacity:1; transform:translateX(0); } }';
+            document.head.appendChild(style);
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(function() {
+                toast.style.animation = 'slideOut 0.3s ease';
+                setTimeout(function() { toast.remove(); }, 300);
+            }, 4000);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            updateNavbarWithoutLang();
+            updateCartCount();
+            renderCart();
+            checkAuth();
+            var token = getToken();
+            if (token) {
+                document.getElementById('myOrdersTabItem').style.display = 'block';
+                document.getElementById('notificationNav').style.display = 'block';
+                // Connect to SSE for real-time notifications
+                connectNotificationSSE();
+            }
+        });
+    </script>
+</body>
+</html>

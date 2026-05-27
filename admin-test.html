@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="it" dir="ltr">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Users API - Karma Restaurant</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; padding: 20px; }
+        .test-card { background: white; border-radius: 15px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .success { border-left: 5px solid #28a745; }
+        .error { border-left: 5px solid #dc3545; }
+        .loading { border-left: 5px solid #ffc107; }
+        pre { background: #f8f9fa; padding: 15px; border-radius: 8px; overflow-x: auto; }
+        .log-entry { padding: 8px 12px; border-bottom: 1px solid #eee; font-family: monospace; font-size: 0.9rem; }
+        .log-entry.error { background: #fff5f5; color: #dc3545; }
+        .log-entry.success { background: #f0fff4; color: #28a745; }
+        .log-entry.info { background: #f8f9fa; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test API Utenti</h1>
+        <p class="text-muted">Questa pagina testa se gli utenti vengono caricati correttamente da Firebase</p>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="test-card" id="tokenTest">
+                    <h5>1. Test Token</h5>
+                    <div id="tokenStatus">In attesa...</div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="test-card" id="usersTest">
+                    <h5>2. Test Caricamento Utenti</h5>
+                    <div id="usersStatus">In attesa...</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-card">
+            <h5>3. Log Risultati</h5>
+            <div id="logContainer"></div>
+        </div>
+        
+        <div class="test-card">
+            <h5>4. Risposta API Completa</h5>
+            <pre id="apiResponse">Nessuna risposta ancora...</pre>
+        </div>
+        
+        <div class="test-card">
+            <h5>🔗 Link Rapidi</h5>
+            <a href="/admin" class="btn btn-primary">Vai a Admin Panel</a>
+            <a href="/" class="btn btn-outline-secondary">Home</a>
+        </div>
+    </div>
+    
+    <script>
+        function log(message, type) {
+            var container = document.getElementById('logContainer');
+            var entry = document.createElement('div');
+            entry.className = 'log-entry ' + (type || 'info');
+            entry.innerHTML = '[' + new Date().toLocaleTimeString() + '] ' + message;
+            container.insertBefore(entry, container.firstChild);
+        }
+        
+        function getToken() {
+            return localStorage.getItem('karmaToken');
+        }
+        
+        function testToken() {
+            var card = document.getElementById('tokenTest');
+            var status = document.getElementById('tokenStatus');
+            
+            var token = getToken();
+            
+            if (token) {
+                card.className = 'test-card success';
+                status.innerHTML = '<span class="text-success">✅ Token trovato</span><br><small class="text-muted">Token: ' + token.substring(0, 20) + '...</small>';
+                log('Token trovato: ' + token.substring(0, 20) + '...', 'success');
+                return true;
+            } else {
+                card.className = 'test-card error';
+                status.innerHTML = '<span class="text-danger">❌ Nessun token!</span><br><small>Devi effettuare il login prima</small>';
+                log('Nessun token trovato - devi fare login', 'error');
+                return false;
+            }
+        }
+        
+        function testUsersAPI() {
+            var card = document.getElementById('usersTest');
+            var status = document.getElementById('usersStatus');
+            var response = document.getElementById('apiResponse');
+            
+            card.className = 'test-card loading';
+            status.innerHTML = '<span class="text-warning">⏳ Caricamento in corso...</span>';
+            
+            var token = getToken();
+            
+            log('Chiamata API /api/admin/users...', 'info');
+            
+            fetch('/api/admin/users', {
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                }
+            })
+            .then(function(r) {
+                log('Risposta API: ' + r.status, r.ok ? 'success' : 'error');
+                return r.json().then(function(data) {
+                    return { status: r.status, data: data };
+                }).catch(function() {
+                    return { status: r.status, data: { error: 'Risposta non JSON' } };
+                });
+            })
+            .then(function(result) {
+                response.textContent = JSON.stringify(result.data, null, 2);
+                
+                if (result.status === 200 && Array.isArray(result.data)) {
+                    card.className = 'test-card success';
+                    status.innerHTML = '<span class="text-success">✅ Success!</span><br>' +
+                        '<strong>Utenti trovati: ' + result.data.length + '</strong><br>' +
+                        '<small>Controlla i log qui sotto per i dettagli</small>';
+                    
+                    log('SUCCESS! Utenti caricati: ' + result.data.length, 'success');
+                    
+                    if (result.data.length > 2) {
+                        log('Utenti registrati: ' + (result.data.length - 2), 'info');
+                    }
+                    
+                    // Show users list
+                    result.data.forEach(function(user, index) {
+                        log('  ' + (index + 1) + '. ' + user.name + ' (' + user.email + ') - ' + user.role, 'info');
+                    });
+                } else if (result.status === 403) {
+                    card.className = 'test-card error';
+                    status.innerHTML = '<span class="text-danger">❌ Non autorizzato!</span><br><small>Devi essere admin o owner</small>';
+                    log('Errore 403 - Non autorizzato', 'error');
+                } else {
+                    card.className = 'test-card error';
+                    status.innerHTML = '<span class="text-danger">❌ Errore!</span><br><small>' + (result.data.error || 'Errore sconosciuto') + '</small>';
+                    log('Errore: ' + (result.data.error || 'Sconosciuto'), 'error');
+                }
+            })
+            .catch(function(e) {
+                card.className = 'test-card error';
+                status.innerHTML = '<span class="text-danger">❌ Errore di rete!</span><br><small>' + e.message + '</small>';
+                response.textContent = 'Errore: ' + e.message;
+                log('Errore di rete: ' + e.message, 'error');
+            });
+        }
+        
+        // Run tests on load
+        window.onload = function() {
+            log('Inizio test...', 'info');
+            
+            if (testToken()) {
+                setTimeout(function() {
+                    testUsersAPI();
+                }, 500);
+            }
+        };
+    </script>
+</body>
+</html>
+

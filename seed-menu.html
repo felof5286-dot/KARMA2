@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>رفع المنيو للفايربيز - Karma Restaurant</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .seed-container {
+            max-width: 800px;
+            margin: 50px auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo h1 {
+            color: #1a1a2e;
+            font-size: 2.5rem;
+        }
+        .logo h1 i {
+            color: #e94560;
+        }
+        .status-box {
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .status-box.success {
+            background: #d4edda;
+            border: 2px solid #28a745;
+            color: #155724;
+        }
+        .status-box.error {
+            background: #f8d7da;
+            border: 2px solid #dc3545;
+            color: #721c24;
+        }
+        .status-box.info {
+            background: #cce5ff;
+            border: 2px solid #007bff;
+            color: #004085;
+        }
+        .log-box {
+            background: #1a1a2e;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin: 20px 0;
+        }
+        .log-box .error {
+            color: #ff4444;
+        }
+        .log-box .success {
+            color: #00ff00;
+        }
+        .log-box .info {
+            color: #ffff00;
+        }
+        .btn-seed {
+            background: linear-gradient(135deg, #e94560, #c73e54);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        .btn-seed:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(233, 69, 96, 0.4);
+        }
+        .btn-seed:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .category-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        .item-list {
+            list-style: none;
+            padding: 0;
+        }
+        .item-list li {
+            padding: 8px 15px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+        }
+        .item-list li:last-child {
+            border-bottom: none;
+        }
+        .item-price {
+            font-weight: bold;
+            color: #8B0000;
+        }
+    </style>
+</head>
+<body>
+    <div class="seed-container">
+        <div class="logo">
+            <h1><i class="fas fa-utensils"></i> Karma Restaurant</h1>
+            <p class="text-muted">رفع المنيو والفئات للفايربيز</p>
+        </div>
+
+        <div class="alert alert-info">
+            <strong>⚠️ تنبيه:</strong> هذا الزر سيرفع جميع المنيو والفئات إلى Firebase Firestore. تأكد من تسجيل الدخول كأدمن أولاً.
+        </div>
+
+        <div id="loginWarning" class="status-box info" style="display: none;">
+            <strong>❌ يجب تسجيل الدخول أولاً!</strong>
+            <p>يجب أن تكون أدمن أو مالك لتفعيل هذا الزر</p>
+            <a href="/login" class="btn btn-primary">تسجيل الدخول</a>
+        </div>
+
+        <div id="loggedInAs" class="status-box success" style="display: none;">
+            <strong>✅ مسجل الدخول كـ:</strong> <span id="userEmail"></span>
+            <br><strong>الدور:</strong> <span id="userRole"></span>
+        </div>
+
+        <button id="seedBtn" class="btn-seed" onclick="seedData()">
+            <i class="fas fa-cloud-upload-alt"></i> رفع المنيو للفايربيز
+        </button>
+
+        <div id="logBox" class="log-box" style="display: none;"></div>
+
+        <div id="resultBox" class="status-box" style="display: none;"></div>
+
+        <hr>
+
+        <h4>📋 المنيو الذي سيتم رفعه:</h4>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="category-section">
+                    <h5>📂 الفئات (6)</h5>
+                    <ul class="item-list">
+                        <li><span>مقبلات</span> <span class="item-price">Antipasti</span></li>
+                        <li><span>معكرونة</span> <span class="item-price">Primi</span></li>
+                        <li><span>أطباق رئيسية</span> <span class="item-price">Secondi</span></li>
+                        <li><span>بيتزا</span> <span class="item-price">Pizza</span></li>
+                        <li><span>حلويات</span> <span class="item-price">Dessert</span></li>
+                        <li><span>مشروبات</span> <span class="item-price">Bevande</span></li>
+                    </ul>
+                </div>
+            <div class="col-md-6">
+                <div class="category-section">
+                    <h5>🍽️ الأطباق (17)</h5>
+                    <ul class="item-list">
+                        <li><span>بروسكتا</span> <span class="item-price">€8</span></li>
+                        <li><span>كارباشيو</span> <span class="item-price">€12</span></li>
+                        <li><span>سباغيتي كاربونارا</span> <span class="item-price">€14</span></li>
+                        <li><span>لازانيا</span> <span class="item-price">€16</span></li>
+                        <li><span>مارغريتا</span> <span class="item-price">€12</span></li>
+                        <li><span>تيراميسو</span> <span class="item-price">€8</span></li>
+                    </ul>
+                </div>
+        </div>
+
+        <div class="text-center mt-4">
+            <a href="/admin" class="btn btn-outline-secondary">العودة للوحة التحكم</a>
+            <a href="/" class="btn btn-outline-primary">الصفحة الرئيسية</a>
+        </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Check login status
+        function getToken() {
+            return localStorage.getItem('karmaToken');
+        }
+        
+        function getUser() {
+            try {
+                return JSON.parse(localStorage.getItem('karmaUser')) || null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function checkLogin() {
+            const user = getUser();
+            const token = getToken();
+            
+            if (!user || !token) {
+                document.getElementById('loginWarning').style.display = 'block';
+                document.getElementById('seedBtn').disabled = true;
+                document.getElementById('seedBtn').innerHTML = '<i class="fas fa-lock"></i> يجب تسجيل الدخول';
+                return false;
+            }
+            
+            if (user.role !== 'admin' && user.role !== 'owner') {
+                document.getElementById('loginWarning').style.display = 'block';
+                document.getElementById('loginWarning').innerHTML = '<strong>❌ غير مصرح!</strong><p>يجب أن تكون أدمن أو مالك</p>';
+                document.getElementById('seedBtn').disabled = true;
+                return false;
+            }
+            
+            document.getElementById('loggedInAs').style.display = 'block';
+            document.getElementById('userEmail').textContent = user.email;
+            document.getElementById('userRole').textContent = user.role === 'admin' ? 'أدمن' : 'مالك';
+            return true;
+        }
+
+        function log(message, type) {
+            const logBox = document.getElementById('logBox');
+            const time = new Date().toLocaleTimeString('ar-SA');
+            const className = type || 'info';
+            logBox.innerHTML += '<div class="' + className + '">[' + time + '] ' + message + '</div>';
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        async function seedData() {
+            const token = getToken();
+            if (!token) {
+                alert('يجب تسجيل الدخول أولاً!');
+                return;
+            }
+
+            const btn = document.getElementById('seedBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الرفع...';
+            
+            const logBox = document.getElementById('logBox');
+            const resultBox = document.getElementById('resultBox');
+            
+            logBox.style.display = 'block';
+            resultBox.style.display = 'none';
+            logBox.innerHTML = '';
+            
+            log('🚀 بدء رفع البيانات للفايربيز...', 'info');
+            
+            try {
+                // 1. Upload Categories
+                log('📂 جاري رفع الفئات...', 'info');
+                
+                const categories = [
+                    { key: 'Antipasti', name: 'مقبلات' },
+                    { key: 'Primi', name: 'معكرونة' },
+                    { key: 'Secondi', name: 'أطباق رئيسية' },
+                    { key: 'Pizza', name: 'بيتزا' },
+                    { key: 'Dessert', name: 'حلويات' },
+                    { key: 'Bevande', name: 'مشروبات' }
+                ];
+                
+                for (const cat of categories) {
+                    const response = await fetch('/api/categories', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': 'Bearer ' + token,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ key: cat.key, name: cat.name })
+                    });
+                    
+                    if (response.ok) {
+                        log('✅ تم رفع الفئة: ' + cat.key + ' - ' + cat.name, 'success');
+                    } else {
+                        const error = await response.json();
+                        log('❌ خطأ في رفع ' + cat.key + ': ' + (error.error || 'خطأ'), 'error');
+                    }
+                }
+                
+                log('📂 تم رفع جميع الفئات!', 'success');
+                
+                // 2. Upload Menu Items
+                log('🍽️ جاري رفع الأطباق...', 'info');
+                
+                const menuItems = [
+                    // Antipasti
+                    { name: 'بروسكتا', description: 'لحم مقدد إيطالي مع جبنة موزاريلا', price: 8, category: 'Antipasti', image: 'https://images.unsplash.com/photo-1626202390498-e7274b7b791e?w=300' },
+                    { name: 'كارباشيو', description: 'شرائح لحم بقر نيئة مع صلصة الليمون', price: 12, category: 'Antipasti', image: 'https://images.unsplash.com/photo-1546241072-48010ad2862c?w=300' },
+                    { name: 'براماسان', description: 'أجبان إيطالية متنوعة مع العسل', price: 10, category: 'Antipasti', image: 'https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?w=300' },
+                    
+                    // Primi
+                    { name: 'سباغيتي كاربونارا', description: 'معكرونة مع بيكون وبيكريز وبيض', price: 14, category: 'Primi', image: 'https://images.unsplash.com/photo-1612874742237-6526221588e3?w=300' },
+                    { name: 'لازانيا', description: 'معكرونة طبقات مع لحم مفروم وصلصة البشامل', price: 16, category: 'Primi', image: 'https://images.unsplash.com/photo-1574894709920-11b28e7367e3?w=300' },
+                    { name: 'ريزوتو', description: 'أرز كابيروني مع جبنة بارميزان', price: 13, category: 'Primi', image: 'https://images.unsplash.com/photo-1476124369491-e7addf5db371?w=300' },
+                    
+                    // Secondi
+                    { name: 'أوسو بوكو', description: 'ضلع بقري مطهو مع النبيذ الأحمر', price: 28, category: 'Secondi', image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=300' },
+                    { name: 'سالاماندرا', description: 'دجاج مشوي مع إكليل الجبل والليمون', price: 22, category: 'Secondi', image: 'https://images.unsplash.com/photo-1598103442097-8b74394b95c6?w=300' },
+                    { name: 'كالاماري', description: 'حبار مقلي مع صلصة الليمون', price: 18, category: 'Secondi', image: 'https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?w=300' },
+                    
+                    // Pizza
+                    { name: 'مارغريتا', description: 'طماطم وموتزاريلا وريحان', price: 12, category: 'Pizza', image: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=300' },
+                    { name: 'كواترو فورماجي', description: 'أربعة أنواع جبن', price: 15, category: 'Pizza', image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300' },
+                    { name: 'ببربونا', description: 'طماطم وموتزاريلا وهام', price: 14, category: 'Pizza', image: 'https://images.unsplash.com/photo-1628840042765-356cda07504e?w=300' },
+                    
+                    // Dessert
+                    { name: 'تيراميسو', description: 'كعكة قهوة إيطالية كلاسيكية', price: 8, category: 'Dessert', image: 'https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?w=300' },
+                    { name: 'بانا كوتا', description: 'كريم كاراميل مع صلصة التوت', price: 7, category: 'Dessert', image: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=300' },
+                    
+                    // Bevande
+                    { name: 'إسبريسو', description: 'قهوة إيطالية قوية', price: 3, category: 'Bevande', image: 'https://images.unsplash.com/photo-1510707577719-ae7c14805e3a?w=300' },
+                    { name: 'كابوتشينو', description: 'قهوة مع حليب مخفوق', price: 4, category: 'Bevande', image: 'https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=300' },
+                    { name: 'سبرايت', description: 'مشروب غازي', price: 2, category: 'Bevande', image: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=300' }
+                ];
+                
+                let successCount = 0;
+                let failCount = 0;
+                
+                for (const item of menuItems) {
+                    const response = await fetch('/api/menu', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': 'Bearer ' + token,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(item)
+                    });
+                    
+                    if (response.ok) {
+                        log('✅ تم رفع: ' + item.name + ' - €' + item.price, 'success');
+                        successCount++;
+                    } else {
+                        const error = await response.json();
+                        log('❌ خطأ في رفع ' + item.name + ': ' + (error.error || 'خطأ'), 'error');
+                        failCount++;
+                    }
+                    
+                    // Small delay between requests
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                }
+                
+                log('🍽️ تم رفع ' + successCount + ' طبق من ' + menuItems.length, 'success');
+                
+                // Show result
+                resultBox.style.display = 'block';
+                if (failCount === 0) {
+                    resultBox.className = 'status-box success';
+                    resultBox.innerHTML = '<strong>🎉 تم بنجاح!</strong><br>' +
+                        '✅ الفئات: 6<br>' +
+                        '✅ الأطباق: ' + successCount + '<br>' +
+                        '<br>الآن يمكنك التحقق من المنيو في لوحة التحكم!';
+                } else {
+                    resultBox.className = 'status-box warning';
+                    resultBox.className = 'status-box';
+                    resultBox.style.background = '#fff3cd';
+                    resultBox.style.border = '2px solid #ffc107';
+                    resultBox.style.color = '#856404';
+                    resultBox.innerHTML = '<strong>⚠️ تم مع بعض الأخطاء</strong><br>' +
+                        '✅ نجح: ' + successCount + '<br>' +
+                        '❌ فشل: ' + failCount + '<br>' +
+                        '<br>تحقق من السجلات أعلاه';
+                }
+                
+            } catch (error) {
+                log('❌ خطأ عام: ' + error.message, 'error');
+                resultBox.style.display = 'block';
+                resultBox.className = 'status-box error';
+                resultBox.innerHTML = '<strong>❌ حدث خطأ!</strong><br>' + error.message;
+            }
+            
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> رفع المنيو للفايربيز';
+        }
+
+        // Check login on page load
+        window.onload = function() {
+            checkLogin();
+        };
+    </script>
+</body>
+</html>

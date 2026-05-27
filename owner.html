@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مالك المطعم - Karma Restaurant</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; margin: 0; }
+        .sidebar { background: #1a1a2e; color: white; min-height: 100vh; padding: 0; }
+        .sidebar h4 { padding: 20px 0; margin: 0; text-align: center; border-bottom: 1px solid #333; }
+        .sidebar .nav-link { color: #aaa; padding: 15px 20px; display: block; }
+        .sidebar .nav-link:hover { background: #e94560; color: white; }
+        .sidebar .nav-link.active { background: #e94560; color: white; }
+        .main-content { padding: 20px; }
+        .page-section { display: none; }
+        .page-section.active { display: block; }
+        .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        
+        .daily-reports-simple { display: flex; flex-direction: column; gap: 10px; }
+        .daily-report-row {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        .daily-report-row:hover { box-shadow: 0 3px 10px rgba(0,0,0,0.1); }
+        .daily-report-row.is-today { border: 2px solid #28a745; background: #f8fff8; }
+        .daily-report-row .day-date {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1a1a2e;
+            min-width: 180px;
+        }
+        .daily-report-row .day-stats { display: flex; gap: 25px; flex: 1; justify-content: center; }
+        .daily-report-row .stat { text-align: center; min-width: 70px; }
+        .daily-report-row .stat-num { display: block; font-size: 1.3rem; font-weight: bold; color: #1a1a2e; }
+        .daily-report-row .stat-num.completed { color: #28a745; }
+        .daily-report-row .stat-num.revenue { color: #667eea; }
+        .daily-report-row .stat-label { font-size: 0.8rem; color: #999; }
+        .daily-report-row .export-btn { margin-right: 15px; }
+        .badge-today { background: #28a745 !important; font-size: 0.75rem !important; margin-left: 8px; }
+        
+        .summary-card { border-radius: 15px; padding: 25px; color: white; margin-bottom: 20px; }
+        .summary-card h3 { font-size: 2.5rem; margin: 0; }
+        .summary-card.blue { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .summary-card.green { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+        .summary-card.orange { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .summary-card.red { background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%); }
+        
+        @media (max-width: 768px) {
+            .daily-report-row { flex-direction: column; gap: 12px; text-align: center; }
+            .daily-report-row .day-date { justify-content: center; min-width: auto; }
+            .daily-report-row .day-stats { gap: 15px; flex-wrap: wrap; }
+            .daily-report-row .export-btn { margin-right: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+<div class="col-md-3 col-lg-2 sidebar">
+                <h4><i class="fas fa-utensils text-warning"></i> Karma</h4>
+                <nav class="nav flex-column">
+                    <a href="#" class="nav-link active" onclick="showPage('dashboard', this); return false;">الرئيسية</a>
+                    <a href="#" class="nav-link" onclick="showPage('orders', this); return false;">
+                        <i class="fas fa-shopping-cart me-2"></i>الطلبات
+                        <span id="ordersBadge" class="badge bg-danger ms-1" style="display:none;">0</span>
+                    </a>
+                    <a href="#" class="nav-link" onclick="showPage('reports', this); return false;">التقارير</a>
+                    <a href="/" class="nav-link">خروج</a>
+                </nav>
+            </div>
+            <div class="col-md-9 col-lg-10 main-content">
+                <div class="header-bar"><h2 class="mb-0">مالك المطعم</h2></div>
+                
+<div id="dashboard" class="page-section active">
+                    <h2>لوحة التحكم</h2>
+                    <div class="row">
+                        <div class="col-md-6 col-lg-3">
+                            <div class="summary-card blue"><h3 id="totalOrders">0</h3><p>إجمالي الطلبات</p></div>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <div class="summary-card green"><h3 id="totalRevenue">€0</h3><p>الإيرادات</p></div>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <div class="summary-card orange"><h3 id="totalUsers">0</h3><p>المستخدمين</p></div>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <div class="summary-card red"><h3 id="completedOrders">0</h3><p>مكتمل</p></div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-4">
+                        <div class="card-header"><h5 class="mb-0"><i class="fas fa-clock"></i> إنهاء اليوم وبدء يوم جديد</h5></div>
+                        <div class="card-body">
+                            <p><strong>ملاحظة:</strong> عند إنهاء اليوم، سيتم حفظ تقرير جميع طلبات اليوم وحذف جميع الطلبات.</p>
+                            <button class="btn btn-warning btn-lg" onclick="endDay()" id="endDayBtn">
+                                <i class="fas fa-check-circle"></i> إنهاء اليوم الحالي
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="orders" class="page-section">
+                    <h2>
+                        <i class="fas fa-shopping-cart"></i> الطلبات
+                        <button class="btn btn-primary btn-sm me-2" onclick="loadOrders()" title="تحديث الآن">
+                            <i class="fas fa-sync"></i> تحديث
+                        </button>
+                        <span id="autoRefreshStatus" class="badge bg-success">تحديث تلقائي: نعم</span>
+                    </h2>
+                    <p class="text-muted">الطلبات الجديدة تظهر تلقائياً كل 10 ثوانٍ</p>
+                    
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>الطلب</th>
+                                            <th>العميل</th>
+                                            <th>الأصناف</th>
+                                            <th>السعر</th>
+                                            <th>الدفع</th>
+                                            <th>الحالة</th>
+                                            <th>الوقت</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="ordersTable">
+                                        <tr><td colspan="8" class="text-center">جاري تحميل الطلبات...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="reports" class="page-section">
+                    <h2><i class="fas fa-chart-bar"></i> تقارير الأيام السابقة</h2>
+                    <p class="text-muted">قائمة مبسطة بالإيرادات والأوامر لكل يوم</p>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6 col-lg-3">
+                            <div class="summary-card blue"><h3 id="reportTotalRevenue">€0</h3><p>إجمالي الإيرادات</p></div>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <div class="summary-card green"><h3 id="reportTotalOrders">0</h3><p>إجمالي الطلبات</p></div>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <div class="summary-card orange"><h3 id="reportTotalDays">0</h3><p>عدد الأيام</p></div>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <div class="summary-card red"><h3 id="reportAverageDay">€0</h3><p>متوسط اليوم</p></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <button class="btn btn-outline-primary" onclick="exportAllReportsPDF()">
+                            <i class="fas fa-file-pdf"></i> تصدير الكل PDF
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="loadDailyReports()">
+                            <i class="fas fa-sync"></i> تحديث
+                        </button>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header"><h5 class="mb-0"><i class="fas fa-list"></i> التقارير</h5></div>
+                        <div class="card-body">
+                            <div id="dailyReportsList" class="daily-reports-simple">
+                                <p class="text-muted text-center">تحميل...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function getToken() { return localStorage.getItem('karmaToken'); }
+        
+        function showPage(p, el) {
+            document.querySelectorAll('.page-section').forEach(function(e) { e.classList.remove('active'); });
+            document.getElementById(p).classList.add('active');
+            document.querySelectorAll('.nav-link').forEach(function(e) { e.classList.remove('active'); });
+            if (el) el.classList.add('active');
+        }
+        
+function loadDashboard() {
+            fetch('/api/admin/stats', { headers: { 'Authorization': 'Bearer ' + getToken() } })
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    document.getElementById('totalOrders').innerText = d.totalOrders || 0;
+                    document.getElementById('totalRevenue').innerText = '€' + (d.revenue || 0).toFixed(2);
+                    document.getElementById('totalUsers').innerText = d.totalUsers || 0;
+                    document.getElementById('completedOrders').innerText = d.completedOrders || 0;
+                })
+                .catch(function(e) {
+                    console.error('Error loading dashboard:', e);
+                });
+        }
+        
+        // ==================== Orders Functions ====================
+        
+        var ordersAutoRefreshInterval = null;
+        var lastOrderCount = 0;
+        var lastOrdersData = [];
+        
+        function loadOrders() {
+            var token = getToken();
+            if (!token) {
+                document.getElementById('ordersTable').innerHTML = '<tr><td colspan="8" class="text-center text-danger">يجب تسجيل الدخول أولاً</td></tr>';
+                return;
+            }
+            
+            fetch('/api/admin/orders', { headers: { 'Authorization': 'Bearer ' + token } })
+            .then(function(r) { return r.json(); })
+            .then(function(orders) {
+                // Sort orders by createdAt descending (newest first)
+                orders.sort(function(a, b) {
+                    return new Date(b.createdAt) - new Date(a.createdAt);
+                });
+                
+                var h = '';
+                var pendingCount = 0;
+                var hasNewOrders = false;
+                
+                if (orders.length === 0) {
+                    h = '<tr><td colspan="8" class="text-center text-muted">لا يوجد طلبات حالياً</td></tr>';
+                } else {
+                    for (var i = 0; i < orders.length; i++) {
+                        var order = orders[i];
+                        var isNew = lastOrdersData.length > 0 && !lastOrdersData.find(function(lo) { return lo._id === order._id; });
+                        if (isNew && order.status === 'pending') {
+                            hasNewOrders = true;
+                        }
+                        if (order.status === 'pending') pendingCount++;
+                        
+                        var paymentMethod = order.paymentMethod === 'visa' ? 
+                            '<i class="fab fa-cc-visa text-primary"></i> فيزا' : 
+                            '<i class="fas fa-money-bill-wave text-success"></i> نقداً';
+                        
+                        var itemsCount = order.items ? order.items.length : 0;
+                        var itemsPreview = itemsCount > 0 ? itemsCount + ' عناصر' : '-';
+                        
+                        var newBadge = isNew ? '<span class="badge bg-danger ms-1">جديد</span>' : '';
+                        
+                        h += '<tr class="' + (isNew ? 'table-warning' : '') + '" style="cursor: pointer;" onclick="showOrderDetails(\'' + order._id + '\')" title="اضغط لعرض التفاصيل">' +
+                            '<td>' + (i + 1) + '</td>' +
+                            '<td><strong class="text-primary">' + order.orderId + '</strong>' + newBadge + '</td>' +
+                            '<td>' + order.customerName + '<br><small class="text-muted">' + order.customerPhone + '</small></td>' +
+                            '<td>' + itemsPreview + '</td>' +
+                            '<td><strong class="text-success">€' + (order.total || 0).toFixed(2) + '</strong></td>' +
+                            '<td>' + paymentMethod + '</td>' +
+                            '<td><span class="badge ' + getStatusClass(order.status) + '">' + getStatusText(order.status) + '</span></td>' +
+                            '<td><small class="text-muted">' + new Date(order.createdAt).toLocaleTimeString('ar-SA') + '</small></td>' +
+                            '</tr>';
+                    }
+                }
+                
+                document.getElementById('ordersTable').innerHTML = h;
+                
+                // Update badge
+                var badge = document.getElementById('ordersBadge');
+                if (pendingCount > 0) {
+                    badge.textContent = pendingCount;
+                    badge.style.display = 'inline-block';
+                    if (hasNewOrders) {
+                        badge.classList.add('animate__animated', 'animate__pulse');
+                    }
+                } else {
+                    badge.style.display = 'none';
+                }
+                
+                // Play sound for new orders
+                if (hasNewOrders) {
+                    playNewOrderSound();
+                    showNewOrderNotification(hasNewOrders ? 'وصل طلب جديد!' : 'تحديث الطلبات');
+                }
+                
+                lastOrdersData = orders;
+                lastOrderCount = orders.length;
+            })
+            .catch(function(e) {
+                console.error('Error loading orders:', e);
+                document.getElementById('ordersTable').innerHTML = '<tr><td colspan="8" class="text-center text-danger">حدث خطأ في تحميل الطلبات</td></tr>';
+            });
+        }
+        
+        function getStatusClass(status) {
+            var classes = {
+                'pending': 'bg-secondary',
+                'preparing': 'bg-info',
+                'ready': 'bg-success',
+                'delivery': 'bg-warning text-dark',
+                'delivered': 'bg-dark',
+                'cancelled': 'bg-danger'
+            };
+            return classes[status] || 'bg-secondary';
+        }
+        
+        function getStatusText(status) {
+            var texts = {
+                'pending': '🆕 جديد',
+                'preparing': '🔄 جاري التحضير',
+                'ready': '✅ جاهز',
+                'delivery': '🚗 خرج للتوصيل',
+                'delivered': '📦 تم الوصول',
+                'cancelled': '❌ ملغي'
+            };
+            return texts[status] || status;
+        }
+        
+        function showOrderDetails(orderId) {
+            var token = getToken();
+            fetch('/api/admin/orders', { headers: { 'Authorization': 'Bearer ' + token } })
+            .then(function(r) { return r.json(); })
+            .then(function(orders) {
+                var order = orders.find(function(o) { return o._id === orderId; });
+                if (!order) {
+                    alert('لم يتم العثور على الطلب');
+                    return;
+                }
+                
+                var detailsHtml = '<div class="card mb-3">' +
+                    '<div class="card-header bg-primary text-white">' +
+                    '<h5 class="mb-0"><i class="fas fa-receipt"></i> تفاصيل الطلب: ' + order.orderId + '</h5>' +
+                    '</div>' +
+                    '<div class="card-body">' +
+                    '<div class="row mb-3">' +
+                    '<div class="col-md-6"><strong>العميل:</strong> ' + order.customerName + '</div>' +
+                    '<div class="col-md-6"><strong>الهاتف:</strong> ' + order.customerPhone + '</div>' +
+                    '</div>';
+                
+                if (order.customerAddress) {
+                    detailsHtml += '<div class="mb-3"><strong>العنوان:</strong> ' + order.customerAddress + '</div>';
+                }
+                
+                if (order.customerNotes) {
+                    detailsHtml += '<div class="mb-3"><strong>ملاحظات:</strong> <span class="text-warning fw-bold">' + order.customerNotes + '</span></div>';
+                }
+                
+                detailsHtml += '<div class="mb-3"><strong>طريقة الدفع:</strong> ' + (order.paymentMethod === 'visa' ? 'فيزا' : 'نقداً') + '</div>' +
+                    '<div class="mb-3"><strong>الحالة:</strong> <span class="badge ' + getStatusClass(order.status) + '">' + getStatusText(order.status) + '</span></div>' +
+                    '<div class="mb-3"><strong>الوقت:</strong> ' + new Date(order.createdAt).toLocaleString('ar-SA') + '</div>';
+                
+                if (order.items && order.items.length > 0) {
+                    detailsHtml += '<h6 class="mt-3 mb-2"><i class="fas fa-utensils"></i> الأصناف:</h6>' +
+                        '<table class="table table-sm table-bordered">' +
+                        '<thead style="background: #1a1a2e; color: white;"><tr><th>الصنف</th><th>الكمية</th><th>السعر</th><th>المجموع</th></tr></thead>' +
+                        '<tbody>';
+                    
+                    order.items.forEach(function(item) {
+                        detailsHtml += '<tr>' +
+                            '<td>' + (item.name || 'صنف') + '</td>' +
+                            '<td class="text-center">' + (item.quantity || 1) + '</td>' +
+                            '<td class="text-center">€' + (item.price || 0).toFixed(2) + '</td>' +
+                            '<td class="text-center"><strong>€' + (item.total || 0).toFixed(2) + '</strong></td>' +
+                            '</tr>';
+                    });
+                    
+                    detailsHtml += '</tbody></table>' +
+                        '<div class="text-end"><strong class="h5 text-success">المجموع الكلي: €' + (order.total || 0).toFixed(2) + '</strong></div>';
+                }
+                
+                detailsHtml += '</div></div>';
+                
+                // Create modal
+                var modalHtml = '<div class="modal fade" id="orderDetailsModal" tabindex="-1">' +
+                    '<div class="modal-dialog modal-lg">' +
+                    '<div class="modal-content">' +
+                    '<div class="modal-header">' +
+                    '<h5 class="modal-title">تفاصيل الطلب</h5>' +
+                    '<button type="button" class="btn-close" data-bs-dismiss="modal"></button>' +
+                    '</div>' +
+                    '<div class="modal-body" id="orderDetailsContent">' +
+                    detailsHtml +
+                    '</div>' +
+                    '<div class="modal-footer">' +
+                    '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>' +
+                    '<button type="button" class="btn btn-primary" onclick="updateOrderStatusFromModal(\'' + order._id + '\', \'preparing\')">جاري التحضير</button>' +
+                    '<button type="button" class="btn btn-success" onclick="updateOrderStatusFromModal(\'' + order._id + '\', \'ready\')">جاهز</button>' +
+                    '</div></div></div></div>';
+                
+                // Remove existing modal if any
+                var existingModal = document.getElementById('orderDetailsModal');
+                if (existingModal) existingModal.remove();
+                
+                // Add new modal
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+                
+                // Show modal
+                var modal = new bootstrap.Modal(document.getElementById('orderDetailsModal'));
+                modal.show();
+                
+                // Remove modal from DOM when hidden
+                document.getElementById('orderDetailsModal').addEventListener('hidden.bs.modal', function() {
+                    this.remove();
+                });
+            });
+        }
+        
+        function updateOrderStatusFromModal(orderId, newStatus) {
+            if (!confirm('تغيير حالة الطلب إلى: ' + getStatusText(newStatus) + '؟')) return;
+            
+            var token = getToken();
+            fetch('/api/admin/orders/' + orderId + '/status', {
+                method: 'PUT',
+                headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(res) {
+                if (res.error) {
+                    alert('خطأ: ' + res.error);
+                } else {
+                    bootstrap.Modal.getInstance(document.getElementById('orderDetailsModal')).hide();
+                    loadOrders();
+                    showNotification('تم تحديث حالة الطلب');
+                }
+            })
+            .catch(function(e) {
+                alert('حدث خطأ: ' + e.message);
+            });
+        }
+        
+        function startAutoRefresh() {
+            // Clear existing interval
+            if (ordersAutoRefreshInterval) {
+                clearInterval(ordersAutoRefreshInterval);
+            }
+            
+            // Load orders immediately
+            loadOrders();
+            
+            // Set auto-refresh every 10 seconds
+            ordersAutoRefreshInterval = setInterval(function() {
+                loadOrders();
+            }, 10000);
+            
+            document.getElementById('autoRefreshStatus').textContent = 'تحديث تلقائي: نعم';
+            document.getElementById('autoRefreshStatus').className = 'badge bg-success';
+        }
+        
+        function stopAutoRefresh() {
+            if (ordersAutoRefreshInterval) {
+                clearInterval(ordersAutoRefreshInterval);
+                ordersAutoRefreshInterval = null;
+            }
+            document.getElementById('autoRefreshStatus').textContent = 'تحديث تلقائي: لا';
+            document.getElementById('autoRefreshStatus').className = 'badge bg-secondary';
+        }
+        
+        function playNewOrderSound() {
+            try {
+                var audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                var oscillator = audioContext.createOscillator();
+                var gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = 523.25; // C5
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.3);
+                
+                // Second note
+                setTimeout(function() {
+                    var osc2 = audioContext.createOscillator();
+                    var gain2 = audioContext.createGain();
+                    osc2.connect(gain2);
+                    gain2.connect(audioContext.destination);
+                    osc2.frequency.value = 659.25; // E5
+                    gain2.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    gain2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                    osc2.start(audioContext.currentTime);
+                    osc2.stop(audioContext.currentTime + 0.3);
+                }, 150);
+            } catch (e) {
+                console.log('Audio not supported');
+            }
+        }
+        
+        function showNewOrderNotification(message) {
+            // Check if notification permission granted
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification('طلب جديد!', { 
+                    body: message,
+                    icon: '/favicon.ico',
+                    tag: 'new-order'
+                });
+            }
+        }
+        
+        function showNotification(message) {
+            var toast = document.createElement('div');
+            toast.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#28a745;color:white;padding:15px 25px;border-radius:10px;z-index:9999;animation:fadeIn 0.3s ease';
+            toast.innerHTML = '<i class="fas fa-check-circle me-2"></i>' + message;
+            document.body.appendChild(toast);
+            
+            setTimeout(function() {
+                toast.style.animation = 'fadeOut 0.3s ease';
+                setTimeout(function() { toast.remove(); }, 300);
+            }, 3000);
+        }
+        
+        function loadDailyReports() {
+            var token = getToken();
+            if (!token) {
+                document.getElementById('dailyReportsList').innerHTML = '<p class="text-danger text-center">يجب تسجيل الدخول أولاً</p>';
+                return;
+            }
+            
+            fetch('/api/admin/daily-reports', { headers: { 'Authorization': 'Bearer ' + token } })
+            .then(function(response) {
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status + ': ' + response.statusText);
+                }
+                return response.json();
+            })
+            .then(function(reports) {
+                var list = document.getElementById('dailyReportsList');
+                
+                if (reports.length === 0) {
+                    list.innerHTML = '<p class="text-muted text-center">لا يوجد تقارير سابقة</p>';
+                    return;
+                }
+                
+                var totalRevenue = 0, totalOrders = 0;
+                reports.forEach(function(report) {
+                    totalRevenue += report.totalRevenue || 0;
+                    totalOrders += report.totalOrders || 0;
+                });
+                var averageDay = reports.length > 0 ? totalRevenue / reports.length : 0;
+                
+                document.getElementById('reportTotalRevenue').textContent = '€' + totalRevenue.toFixed(2);
+                document.getElementById('reportTotalOrders').textContent = totalOrders;
+                document.getElementById('reportTotalDays').textContent = reports.length;
+                document.getElementById('reportAverageDay').textContent = '€' + averageDay.toFixed(2);
+                
+                var today = new Date().toISOString().split('T')[0];
+                var html = '<div class="daily-reports-simple">';
+                
+                reports.forEach(function(report) {
+                    var isToday = report.date === today;
+                    var dateObj = new Date(report.date);
+                    var dateStr = dateObj.toLocaleDateString('ar-SA', { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' });
+                    
+                    html += '<div class="daily-report-row ' + (isToday ? 'is-today' : '') + '">' +
+                        '<div class="day-date">' +
+                        (isToday ? '<span class="badge badge-today">اليوم</span>' : '') + dateStr +
+                        '</div>' +
+                        '<div class="day-stats">' +
+                        '<div class="stat"><span class="stat-num">' + report.totalOrders + '</span><span class="stat-label">طلب</span></div>' +
+                        '<div class="stat"><span class="stat-num completed">' + report.completedOrders + '</span><span class="stat-label">مكتمل</span></div>' +
+                        '<div class="stat"><span class="stat-num revenue">€' + (report.totalRevenue || 0).toFixed(2) + '</span><span class="stat-label">إيرادات</span></div>' +
+                        '</div>' +
+                        '<button class="btn btn-sm btn-outline-primary export-btn" onclick="exportDailyReport(\'' + report.date + '\')" title="تصدير PDF">' +
+                        '<i class="fas fa-file-pdf"></i></button></div>';
+                });
+                
+                html += '</div>';
+                list.innerHTML = html;
+            })
+            .catch(function(e) {
+                console.error('Error loading daily reports:', e);
+                document.getElementById('dailyReportsList').innerHTML = '<p class="text-danger text-center">حدث خطأ: ' + e.message + '</p>';
+            });
+        }
+        
+        function endDay() {
+            if (!confirm('هل أنت متأكد من إنهاء اليوم؟\nسيتم حفظ تقرير كامل وحذف جميع الطلبات.')) return;
+            if (!confirm('تأكيد نهائي')) return;
+            
+            var btn = document.getElementById('endDayBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري المعالجة...';
+            
+            var token = getToken();
+            if (!token) {
+                alert('يجب تسجيل الدخول أولاً');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check-circle"></i> إنهاء اليوم الحالي';
+                return;
+            }
+            
+            fetch('/api/admin/end-day', {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+            })
+            .then(function(response) {
+                if (!response.ok) {
+                    return response.json().then(function(err) {
+                        throw new Error(err.error || 'HTTP ' + response.status);
+                    });
+                }
+                return response.json();
+            })
+            .then(function(res) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check-circle"></i> إنهاء اليوم الحالي';
+                if (res.error) alert('خطأ: ' + res.error);
+                else {
+                    alert('تم إنهاء اليوم بنجاح!\nالطلبات: ' + res.report.summary.totalOrders + '\nالإيرادات: €' + res.report.summary.totalRevenue.toFixed(2));
+                    loadDailyReports();
+                    loadDashboard();
+                }
+            })
+            .catch(function(e) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check-circle"></i> إنهاء اليوم الحالي';
+                console.error('End day error:', e);
+                alert('حدث خطأ: ' + e.message);
+            });
+        }
+        
+        function exportDailyReport(date) {
+            var token = getToken();
+            fetch('/api/admin/daily-reports/' + date, { headers: { 'Authorization': 'Bearer ' + token } })
+            .then(function(r) { return r.json(); })
+            .then(function(report) {
+                if (report.error) alert(report.error);
+                else {
+                    var content = '<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><title>تقرير ' + report.date + '</title>' +
+                        '<style>body{font-family:Tahoma,sans-serif;padding:40px;direction:rtl}' +
+                        'h1{color:#1a1a2e;text-align:center;border-bottom:3px solid #e94560;padding-bottom:20px}' +
+                        '.summary{background:#f8f9fa;padding:20px;border-radius:10px;margin:20px 0}' +
+                        '.stat{display:inline-block;margin:10px 20px;padding:15px;background:white;border-radius:8px}' +
+                        '.stat-value{font-size:1.5rem;font-weight:bold;color:#e94560}</style></head><body>' +
+                        '<h1>تقرير يومي - مطعم كارما</h1>' +
+                        '<p style="text-align:center;color:#666">تاريخ: ' + new Date(report.date).toLocaleDateString('ar-SA') + '</p>' +
+                        '<div class="summary"><h2>ملخص اليوم</h2>' +
+                        '<div class="stat"><div class="stat-value">' + report.totalOrders + '</div><div>إجمالي الطلبات</div></div>' +
+                        '<div class="stat"><div class="stat-value">' + report.completedOrders + '</div><div>مكتمل</div></div>' +
+                        '<div class="stat"><div class="stat-value">€' + (report.totalRevenue || 0).toFixed(2) + '</div><div>الإيرادات</div></div></div>' +
+                        '<p style="text-align:center;color:#999;margin-top:40px">مطعم كارما الإيطالي</p></body></html>';
+                    var printWindow = window.open('', '_blank');
+                    printWindow.document.write(content);
+                    printWindow.document.close();
+                    setTimeout(function() { printWindow.print(); }, 500);
+                }
+            });
+        }
+        
+        function exportAllReportsPDF() {
+            var token = getToken();
+            fetch('/api/admin/daily-reports', { headers: { 'Authorization': 'Bearer ' + token } })
+            .then(function(r) { return r.json(); })
+            .then(function(reports) {
+                if (reports.length === 0) { alert('لا يوجد تقارير'); return; }
+                
+                var content = '<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><title>تقارير كارما</title>' +
+                    '<style>body{font-family:Tahoma,sans-serif;padding:40px;direction:rtl}table{width:100%;border-collapse:collapse;margin-top:20px}' +
+                    'th,td{padding:10px;text-align:center;border:1px solid #ddd}th{background:#1a1a2e;color:white}' +
+                    '.total-row{font-weight:bold;background:#f0f0f0}</style></head><body>' +
+                    '<h1 style="text-align:center;color:#1a1a2e;">تقارير مطعم كارما</h1>' +
+                    '<table><thead><tr><th>اليوم</th><th>عدد الطلبات</th><th>مكتمل</th><th>الإيرادات</th></tr></thead><tbody>';
+                
+                reports.forEach(function(r) {
+                    content += '<tr><td>' + new Date(r.date).toLocaleDateString('ar-SA') + '</td><td>' + r.totalOrders + '</td><td>' + r.completedOrders + '</td><td>€' + r.totalRevenue.toFixed(2) + '</td></tr>';
+                });
+                
+                var totalRevenue = reports.reduce(function(s, r) { return s + (r.totalRevenue || 0); }, 0);
+                content += '<tr class="total-row"><td>المجموع</td><td>' + reports.reduce(function(s, r) { return s + r.totalOrders; }, 0) + '</td><td>' + reports.reduce(function(s, r) { return s + r.completedOrders; }, 0) + '</td><td>€' + totalRevenue.toFixed(2) + '</td></tr>';
+                content += '</tbody></table><p style="text-align:center;color:#999;margin-top:20px">مطعم كارما الإيطالي</p></body></html>';
+                
+                var printWindow = window.open('', '_blank');
+                printWindow.document.write(content);
+                printWindow.document.close();
+                setTimeout(function() { printWindow.print(); }, 500);
+            });
+        }
+        
+window.onload = function() {
+            if (!getToken()) { window.location.href = '/login'; return; }
+            loadDashboard();
+            loadDailyReports();
+            startAutoRefresh(); // Start auto-refresh for orders
+        };
+    </script>
+</body>
+</html>
+

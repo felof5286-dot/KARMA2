@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="it" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accedi - Karma Restaurant</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --gold: #D4AF37;
+            --dark-red: #8B0000;
+            --black: #0D0D0D;
+            --cream: #FFF8E7;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--cream);
+            min-height: 100vh;
+        }
+        .login-container {
+            max-width: 450px;
+            margin: 50px auto;
+            padding: 40px 30px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        .brand-title {
+            font-size: 2.5rem;
+            color: var(--black);
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .brand-subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .form-label {
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+        .form-control {
+            padding: 14px 18px;
+            border-radius: 10px;
+            border: 2px solid #e0e0e0;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+        .form-control:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 0 0.2rem rgba(212,175,55,0.25);
+        }
+        .btn-primary {
+            background: var(--black);
+            border: none;
+            padding: 14px 30px;
+            font-size: 1.1rem;
+            border-radius: 10px;
+            transition: all 0.3s;
+            width: 100%;
+        }
+        .btn-primary:hover {
+            background: var(--dark-red);
+            transform: translateY(-2px);
+        }
+        .alert {
+            border-radius: 10px;
+            padding: 15px 20px;
+        }
+        .register-link {
+            text-align: center;
+            color: #666;
+        }
+        .register-link a {
+            color: var(--dark-red);
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .register-link a:hover {
+            text-decoration: underline;
+        }
+        .contact-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .contact-info hr {
+            margin: 15px 0;
+        }
+        .contact-info p {
+            margin-bottom: 8px;
+            color: #666;
+        }
+        .contact-info a {
+            color: var(--dark-red);
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="login-container">
+            <h1 class="brand-title">Karma</h1>
+            <p class="brand-subtitle">Accedi al tuo account</p>
+            
+            <div id="loginAlert"></div>
+            
+            <form id="loginForm">
+                <div class="mb-4">
+                    <label class="form-label" for="email">Email</label>
+                    <input type="email" class="form-control" id="email" name="email" required placeholder="Inserisci la tua email">
+                </div>
+                
+                <div class="mb-4">
+                    <label class="form-label" for="password">Password</label>
+                    <input type="password" class="form-control" id="password" name="password" required placeholder="Inserisci la password">
+                </div>
+                
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-sign-in-alt me-2"></i> Accedi
+                    </button>
+                </div>
+            </form>
+            
+            <p class="register-link mt-4">
+                Non hai un account? <a href="#" onclick="showRegisterForm(); return false;">Registrati ora</a>
+            </p>
+            
+            <div class="contact-info">
+                <p class="mb-1"><i class="fas fa-phone me-2"></i> 0331 027171 | 320 1388633</p>
+                <p class="mb-1"><i class="fas fa-envelope me-2"></i> karmaristorantepizzeria@gmail.com</p>
+                <p class="mb-0"><a href="https://maps.app.goo.gl/FyUP3TR2gaEEiw648" target="_blank" rel="noopener"><i class="fas fa-map-marker-alt me-2"></i>La nostra posizione</a></p>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="registerModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Crea nuovo account</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="registerAlert"></div>
+                    <form id="registerForm">
+                        <div class="mb-3">
+                            <label class="form-label" for="regName">Nome completo</label>
+                            <input type="text" class="form-control" id="regName" name="name" required placeholder="Inserisci il tuo nome">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="regEmail">Email</label>
+                            <input type="email" class="form-control" id="regEmail" name="email" required placeholder="Inserisci la tua email">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="regPassword">Password</label>
+                            <input type="password" class="form-control" id="regPassword" name="password" required placeholder="Crea una password">
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-user-plus me-2"></i> Crea account
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // API base URL - points to local/hosted backend
+        function getApiBaseUrl() {
+            return '/api';
+        }
+
+        var registerModal = null;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            registerModal = new bootstrap.Modal(document.getElementById('registerModal'));
+            
+            if (localStorage.getItem('karmaUser')) {
+                window.location.href = '/';
+                return;
+            }
+            
+            document.getElementById('loginForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                var email = document.getElementById('email').value;
+                var password = document.getElementById('password').value;
+                
+                var alertDiv = document.getElementById('loginAlert');
+                alertDiv.innerHTML = '<div class="alert alert-info">Accesso in corso...</div>';
+                
+                fetch(getApiBaseUrl() + '/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email, password: password })
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.error) {
+                        alertDiv.innerHTML = '<div class="alert alert-danger">' + data.error + '</div>';
+                    } else {
+                        localStorage.setItem('karmaToken', data.token);
+                        localStorage.setItem('karmaUser', JSON.stringify(data.user));
+                        window.location.href = '/';
+                    }
+                })
+                .catch(function(e) {
+                    alertDiv.innerHTML = '<div class="alert alert-danger">Errore, riprova piu tardi</div>';
+                });
+            });
+            
+            document.getElementById('registerForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                var name = document.getElementById('regName').value;
+                var email = document.getElementById('regEmail').value;
+                var password = document.getElementById('regPassword').value;
+                
+                var alertDiv = document.getElementById('registerAlert');
+                alertDiv.innerHTML = '<div class="alert alert-info">Creazione account in corso...</div>';
+                
+                fetch(getApiBaseUrl() + '/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: name, email: email, password: password })
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.error) {
+                        alertDiv.innerHTML = '<div class="alert alert-danger">' + data.error + '</div>';
+                    } else {
+                        localStorage.setItem('karmaToken', data.token);
+                        localStorage.setItem('karmaUser', JSON.stringify(data.user));
+                        var modalEl = document.getElementById('registerModal');
+                        var bsModal = bootstrap.Modal.getInstance(modalEl);
+                        if (bsModal) {
+                            bsModal.hide();
+                        } else {
+                            modalEl.classList.remove('show');
+                            modalEl.style.display = 'none';
+                            document.body.classList.remove('modal-open');
+                            var backdrop = document.querySelector('.modal-backdrop');
+                            if (backdrop) backdrop.remove();
+                        }
+                        setTimeout(function() {
+                            window.location.href = '/';
+                        }, 500);
+                    }
+                })
+                .catch(function(e) {
+                    alertDiv.innerHTML = '<div class="alert alert-danger">Errore, riprova piu tardi</div>';
+                });
+            });
+        });
+        
+        function showRegisterForm() {
+            if (registerModal) {
+                registerModal.show();
+            }
+        }
+    </script>
+</body>
+</html>

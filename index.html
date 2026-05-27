@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="it" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Karma Restaurant - Ristorante Italiano</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --gold: #D4AF37;
+            --gold-light: #F4E4BA;
+            --dark-red: #8B0000;
+            --black: #0D0D0D;
+            --cream: #FFF8E7;
+        }
+      
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--cream);
+        }
+        .hero-section {
+            background: linear-gradient(135deg, rgba(13,13,13,0.95) 0%, rgba(139,0,0,0.85) 100%);
+            color: white;
+            padding: 120px 0;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="1" fill="%23D4AF37" opacity="0.1"/></svg>');
+            background-size: 20px 20px;
+        }
+        .hero-content {
+            position: relative;
+            z-index: 1;
+        }
+        .hero-title {
+            font-size: 4rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            animation: fadeInDown 1s ease;
+        }
+        .hero-subtitle {
+            font-size: 1.5rem;
+            opacity: 0.9;
+            animation: fadeInUp 1s ease 0.3s both;
+        }
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .feature-card {
+            border: none;
+            border-radius: 20px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            background: white;
+        }
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+        }
+        .feature-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 2rem;
+            color: var(--dark-red);
+        }
+        .btn-gold {
+            background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+            color: var(--black);
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+        }
+        .btn-gold:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(212,175,55,0.4);
+            color: var(--dark-red);
+        }
+        .section-title {
+            font-size: 2.5rem;
+            color: var(--black);
+            margin-bottom: 1rem;
+        }
+        .about-section {
+            background: linear-gradient(135deg, var(--black) 0%, #1a1a1a 100%);
+            color: white;
+        }
+        .contact-info-card {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+        .contact-info-card:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateX(10px);
+        }
+        .gallery-img {
+            border-radius: 15px;
+            overflow: hidden;
+            height: 250px;
+            object-fit: cover;
+            transition: all 0.3s ease;
+        }
+        .gallery-img:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-utensils"></i> Karma
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-label="Apri menu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link active" href="/">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/menu">Menu</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/orders"><i class="fas fa-clipboard-list"></i> I Miei Ordini</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/cart"><i class="fas fa-shopping-cart"></i> Carrello <span id="cartCountNav" class="badge bg-danger">0</span></a></li>
+                </ul>
+                <ul class="navbar-nav" id="authNav">
+                    <li class="nav-item"><a class="nav-link" href="/login"><i class="fas fa-sign-in-alt"></i> Accedi</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <section class="hero-section text-center">
+        <div class="container hero-content">
+<h1 class="hero-title mb-4">
+                <i class="fas fa-star" style="color: var(--gold);"></i>
+                Karma Restaurant
+                <i class="fas fa-star" style="color: var(--gold);"></i>
+            </h1>
+            <p class="hero-subtitle mb-5">
+                Goditi le migliori specialita italiane autentiche<br>
+                in un'atmosfera elegante e unica
+            </p>
+            <div class="d-flex justify-content-center gap-3 flex-wrap">
+                <a href="/menu" class="btn btn-gold">
+                    <i class="fas fa-book-open"></i> Ordina Ora
+                </a>
+                <a href="#about" class="btn btn-outline-light btn-lg rounded-pill px-4">
+                    <i class="fas fa-info-circle"></i> Scopri di Piu
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-5">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="section-title">Perche Scegliere Karma?</h2>
+                <p class="text-muted">Vi offriamo un'esperienza culinaria eccezionale</p>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="feature-card p-4 text-center">
+                        <div class="feature-icon">
+                            <i class="fas fa-pizza-slice"></i>
+                        </div>
+                        <h4>Pizza</h4>
+                        <p class="text-muted">Pizza cotta secondo la ricetta originale italiana con pasta croccante e salsa di pomodoro fresco</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card p-4 text-center">
+                        <div class="feature-icon">
+                            <i class="fas fa-wine-glass-alt"></i>
+                        </div>
+                        <h4>Cucina Raffinata</h4>
+                        <p class="text-muted">La migliore pasta e i piatti italiani raffinati con ingredienti di prima qualita</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card p-4 text-center">
+                        <div class="feature-icon">
+                            <i class="fas fa-motorcycle"></i>
+                        </div>
+                        <h4>Consegna Veloce</h4>
+                        <p class="text-muted">Consegniamo i tuoi ordini a casa tua velocemente e con precisione in tutte le zone</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="about" class="about-section py-5">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6 mb-4 mb-lg-0">
+                    <h2 class="display-4 mb-4">La Nostra Storia</h2>
+                    <p class="lead mb-4">Ristorante Karma e un elegante ristorante italiano che offre le migliori specialita italiane autentiche.</p>
+                    <p class="mb-3">
+                        <i class="fas fa-check-circle text-warning me-2"></i>
+                        Ingredienti freschi e di alta qualita
+                    </p>
+                    <p class="mb-3">
+                        <i class="fas fa-check-circle text-warning me-2"></i>
+                        Chef professionisti con lunga esperienza
+                    </p>
+                    <p class="mb-3">
+                        <i class="fas fa-check-circle text-warning me-2"></i>
+                        Atmosfera elegante e confortevole
+                    </p>
+                    <p class="mb-0">
+                        <i class="fas fa-check-circle text-warning me-2"></i>
+                        Servizio eccellente e veloce
+                    </p>
+                </div>
+                <div class="col-lg-6">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <img src="https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300&h=300&fit=crop" 
+                                 class="gallery-img w-100" alt="Pizza">
+                        </div>
+                        <div class="col-6">
+                            <img src="https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=300&h=300&fit=crop" 
+                                 class="gallery-img w-100" alt="Pasta">
+                        </div>
+                        <div class="col-6">
+                            <img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=300&h=300&fit=crop" 
+                                 class="gallery-img w-100" alt="Cibo italiano">
+                        </div>
+                        <div class="col-6">
+                            <img src="https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=300&h=300&fit=crop" 
+                                 class="gallery-img w-100" alt="Ristorante">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-5">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="section-title">Contattaci</h2>
+            </div>
+            <div class="row justify-content-center g-4">
+                <div class="col-md-4">
+                    <div class="contact-info-card">
+                        <h5 class="mb-3"><i class="fas fa-phone me-2"></i> Telefono</h5>
+                        <p class="mb-1">0331 027171</p>
+                        <p class="mb-0">320 1388633</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="contact-info-card">
+                        <h5 class="mb-3"><i class="fas fa-envelope me-2"></i> Email</h5>
+                        <p class="mb-0">karmaristorantepizzeria@gmail.com</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="contact-info-card">
+                        <h5 class="mb-3"><i class="fas fa-map-marker-alt me-2"></i> Posizione</h5>
+                        <p class="mb-0">
+                            <a href="https://maps.app.goo.gl/FyUP3TR2gaEEiw648" target="_blank" rel="noopener" class="text-warning text-decoration-none">
+                                Clicca per la mappa
+                            </a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="bg-dark text-white py-4">
+        <div class="container text-center">
+            <p class="mb-0 display-6">Karma Restaurant</p>
+            <small class="text-warning">Ristorante Italiano Karma</small>
+            <hr class="my-3" style="border-color: var(--gold);">
+            <p class="mb-0">
+                <a href="/menu" class="text-white mx-2 text-decoration-none">Menu</a> |
+                <a href="/cart" class="text-white mx-2 text-decoration-none">Ordini</a> |
+                <a href="#" class="text-white mx-2 text-decoration-none">Chi Siamo</a>
+            </p>
+            <small class="d-block mt-2">© 2024 Karma Restaurant. Tutti i diritti riservati</small>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            updateNavbarWithoutLang();
+            updateCartCount();
+        });
+    </script>
+</body>
+</html>

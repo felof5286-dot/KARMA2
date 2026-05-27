@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="it" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>I Miei Ordini - Karma Restaurant</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --gold: #D4AF37;
+            --dark-red: #8B0000;
+            --black: #0D0D0D;
+            --cream: #FFF8E7;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--cream);
+            color: #333;
+        }
+        .page-header {
+            background: linear-gradient(135deg, var(--black) 0%, var(--dark-red) 100%);
+            color: white;
+            padding: 80px 0;
+        }
+        .order-card {
+            border: none;
+            border-radius: 15px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+            background: white;
+        }
+        .order-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+        }
+        .order-status-pending { background: #fff3cd; color: #856404; border: 1px solid #ffc107; }
+        .order-status-preparing { background: #cce5ff; color: #004085; border: 1px solid #0d6efd; }
+        .order-status-ready { background: #d4edda; color: #155724; border: 1px solid #198754; }
+        .order-status-delivery { background: #cff4fc; color: #0c5460; border: 1px solid #0dcaf0; }
+        .order-status-delivered { background: #d1e7dd; color: #0f5132; border: 1px solid #198754; }
+        .order-status-cancelled { background: #f8d7da; color: #721c24; border: 1px solid #dc3545; }
+        .status-badge { padding: 8px 15px; border-radius: 20px; font-weight: 600; }
+        .order-details-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .order-item:last-child { border-bottom: none; }
+        .nav-notification { position: relative; cursor: pointer; padding: 8px 12px; transition: all 0.3s; }
+        .nav-notification:hover { background: rgba(255,255,255,0.1); }
+        .nav-notification .badge { position: absolute; top: 0; right: 0; font-size: 10px; padding: 3px 6px; }
+        .notification-dropdown { position: fixed; top: 60px; right: 20px; width: 350px; max-height: 400px; background: white; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); z-index: 2000; overflow: hidden; display: none; }
+        .notification-dropdown.show { display: block; }
+        .notification-item { padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; }
+        .notification-item:hover { background: #f8f9fa; }
+        .notification-item.unread { background: #e3f2fd; }
+        .notification-header { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="/"><i class="fas fa-utensils"></i> Karma</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-label="Apri menu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/menu">Menu</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/orders">I Miei Ordini</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/cart"><i class="fas fa-shopping-cart"></i> Carrello <span id="cartCountNav" class="badge bg-danger">0</span></a></li>
+                </ul>
+                <ul class="navbar-nav" id="authNav"></ul>
+                <ul class="navbar-nav" id="notificationNav" style="display:none;">
+                    <li class="nav-item">
+                        <div class="nav-notification" onclick="toggleNotificationDropdown()">
+                            <i class="fas fa-bell" style="color: white; font-size: 1.2rem;"></i>
+                            <span id="notificationBadge" class="badge bg-danger" style="display:none;">0</span>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div id="notificationDropdown" class="notification-dropdown">
+        <div class="notification-header">
+            <h6 class="mb-0"><i class="fas fa-bell"></i> Notifiche</h6>
+            <button class="btn btn-sm btn-outline-secondary" onclick="clearNotifications()">Cancella</button>
+        </div>
+        <div id="notificationList">
+            <div class="text-center py-4 text-muted">
+                <i class="fas fa-bell-slash mb-2" style="font-size: 2rem;"></i>
+                <p class="mb-0">Nessuna notifica</p>
+            </div>
+        </div>
+    </div>
+
+    <section class="page-header text-center">
+        <div class="container">
+            <h1 class="mb-3"><i class="fas fa-clipboard-list"></i> I Miei Ordini</h1>
+            <p class="lead">Traccia i tuoi ordini e lo stato della consegna</p>
+        </div>
+    </section>
+
+    <section class="py-5">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="mb-0"><i class="fas fa-list me-2"></i> Tutti i Tuoi Ordini</h4>
+                <button class="btn btn-primary" onclick="loadUserOrders()">
+                    <i class="fas fa-sync-alt me-2"></i> Aggiorna
+                </button>
+            </div>
+            <div id="ordersListContainer">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Caricamento...</span>
+                    </div>
+                    <p class="mt-3">Caricamento ordini...</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="bg-dark text-white py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6 text-center text-md-start">
+                    <h3 class="mb-2">Karma Restaurant</h3>
+                    <p class="mb-1"><i class="fas fa-phone me-2"></i> 0331 027171 | 320 1388633</p>
+                    <p class="mb-0"><i class="fas fa-envelope me-2"></i> karmaristorantepizzeria@gmail.com</p>
+                </div>
+                <div class="col-md-6 text-center text-md-end mt-3 mt-md-0">
+                    <p class="mb-0"><a href="https://maps.app.goo.gl/FyUP3TR2gaEEiw648" target="_blank" rel="noopener" class="text-warning text-decoration-none"><i class="fas fa-map-marker-alt me-2"></i>La nostra posizione</a></p>
+                </div>
+            </div>
+            <hr class="my-3">
+            <p class="text-center mb-0">© 2024 Karma Restaurant. Tutti i diritti riservati</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/script.js"></script>
+    <script>
+        var urlParams = new URLSearchParams(window.location.search);
+        var highlightOrderId = urlParams.get('id');
+
+        function getOrderStatusText(status) {
+            var statuses = {
+                'pending': 'In Revisione',
+                'preparing': 'In Preparazione',
+                'ready': 'Pronto',
+                'delivery': 'In Consegna',
+                'delivered': 'Consegnato',
+                'cancelled': 'Annullato'
+            };
+            return statuses[status] || status;
+        }
+
+        function getStatusClass(status) {
+            return 'order-status-' + status;
+        }
+
+        function toggleNotificationDropdown() {
+            var dropdown = document.getElementById('notificationDropdown');
+            dropdown.classList.toggle('show');
+            if (dropdown.classList.contains('show')) {
+                loadNotifications();
+            }
+        }
+
+        function loadNotifications() {
+            var token = getToken();
+            if (!token) return;
+            fetch('/api/notifications', { headers: { 'Authorization': 'Bearer ' + token } })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var list = document.getElementById('notificationList');
+                if (!data.notifications || data.notifications.length === 0) {
+                    list.innerHTML = '<div class="text-center py-4 text-muted"><i class="fas fa-bell-slash mb-2" style="font-size: 2rem;"></i><p class="mb-0">Nessuna notifica</p></div>';
+                    return;
+                }
+                var html = '';
+                data.notifications.forEach(function(n) {
+                    var statusText = getOrderStatusText(n.status);
+                    html += '<div class="notification-item ' + (n.read ? '' : 'unread') + '">' +
+                        '<strong>Ordine: ' + n.orderId + '</strong><br>' +
+                        '<span class="badge ' + getStatusClass(n.status) + '">' + statusText + '</span>' +
+                        '<div class="text-muted small">' + new Date(n.createdAt).toLocaleString('it-IT') + '</div></div>';
+                });
+                list.innerHTML = html;
+            });
+        }
+
+        function clearNotifications() {
+            var token = getToken();
+            if (!token) return;
+            fetch('/api/notifications', { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } })
+            .then(function() {
+                document.getElementById('notificationList').innerHTML = '<div class="text-center py-4 text-muted"><i class="fas fa-bell-slash mb-2" style="font-size: 2rem;"></i><p class="mb-0">Nessuna notifica</p></div>';
+                document.getElementById('notificationBadge').style.display = 'none';
+            });
+        }
+
+        function loadUserOrders() {
+            var token = getToken();
+            var container = document.getElementById('ordersListContainer');
+            if (!container) return;
+            
+            if (!token) {
+                container.innerHTML = '<div class="text-center py-5">' +
+                    '<i class="fas fa-user-lock text-muted mb-3" style="font-size: 4rem;"></i>' +
+                    '<h4 class="mb-3">Devi accedere per vedere i tuoi ordini</h4>' +
+                    '<p class="text-muted mb-4">Accedi al tuo account per visualizzare i tuoi ordini</p>' +
+                    '<a href="/login" class="btn btn-primary btn-lg"><i class="fas fa-sign-in-alt me-2"></i>Accedi</a>' +
+                    '</div>';
+                return;
+            }
+
+            container.innerHTML = '<div class="text-center py-5">' +
+                '<div class="spinner-border text-primary" role="status">' +
+                '<span class="visually-hidden">Caricamento...</span>' +
+                '</div>' +
+                '<p class="mt-3">Caricamento ordini...</p>' +
+                '</div>';
+
+            fetch('/api/orders', { headers: { 'Authorization': 'Bearer ' + token } })
+            .then(function(r) { return r.json(); })
+            .then(function(orders) {
+                orders.sort(function(a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
+
+                if (orders.length === 0) {
+                    container.innerHTML = '<div class="text-center py-5">' +
+                        '<i class="fas fa-shopping-bag fa-4x text-muted mb-3"></i>' +
+                        '<p class="text-muted">Nessun ordine precedente</p>' +
+                        '<a href="/menu" class="btn btn-primary btn-lg"><i class="fas fa-utensils me-2"></i>Ordina Ora</a></div>';
+                    return;
+                }
+
+                var html = '';
+                for (var i = 0; i < orders.length; i++) {
+                    var order = orders[i];
+                    var statusClass = getStatusClass(order.status);
+                    var statusText = getOrderStatusText(order.status);
+                    var isHighlighted = highlightOrderId && order._id === highlightOrderId;
+                    
+                    var itemsHtml = '';
+                    if (order.items && order.items.length > 0) {
+                        for (var j = 0; j < order.items.length; j++) {
+                            var item = order.items[j];
+                            var itemName = item.item ? item.item.name : (item.name || 'Piatto');
+                            itemsHtml += '<div class="order-item">' +
+                                '<span>' + (j + 1) + '. ' + itemName + ' x' + item.quantity + '</span>' +
+                                '<span>EUR ' + (item.price * item.quantity).toFixed(2) + '</span></div>';
+                        }
+                    }
+
+                    html += '<div class="card order-card ' + (isHighlighted ? 'border-primary' : '') + '" ' + (isHighlighted ? 'id="highlightedOrder"' : '') + '>' +
+                        '<div class="card-body">' +
+                        '<div class="row">' +
+                        '<div class="col-md-8">' +
+                        '<div class="d-flex justify-content-between align-items-start mb-3">' +
+                        '<div><h5 class="card-title mb-1"><i class="fas fa-receipt me-2"></i>' + order.orderId + '</h5>' +
+                        '<small class="text-muted">' + new Date(order.createdAt).toLocaleString('it-IT') + '</small></div>' +
+                        '<span class="status-badge ' + statusClass + '">' + statusText + '</span></div>' +
+                        '<div class="order-details-card">' +
+                        '<h6 class="mb-3"><i class="fas fa-utensils me-2"></i>Dettagli Ordine:</h6>' +
+                        itemsHtml +
+                        '<div class="order-item mt-3 pt-2 border-top">' +
+                        '<strong>Totale</strong>' +
+                        '<strong style="color: #8B0000;">EUR ' + (order.total || 0).toFixed(2) + '</strong></div></div></div>' +
+                        '<div class="col-md-4 mt-3 mt-md-0">' +
+                        '<div class="bg-light rounded p-3">' +
+                        '<h6 class="mb-3"><i class="fas fa-user me-2"></i>Info Consegna:</h6>' +
+                        '<p class="mb-1"><strong>Nome:</strong> ' + (order.customerName || '-') + '</p>' +
+                        '<p class="mb-1"><strong>Telefono:</strong> ' + (order.customerPhone || '-') + '</p>' +
+                        '<p class="mb-0"><strong>Indirizzo:</strong> ' + (order.customerAddress || '-') + '</p>' +
+                        (order.notes ? '<p class="mt-2 text-muted small"><i class="fas fa-sticky-note me-1"></i>' + order.notes + '</p>' : '') +
+                        '</div></div></div></div>';
+                }
+                container.innerHTML = html;
+                
+                if (isHighlighted) {
+                    var highlighted = document.getElementById('highlightedOrder');
+                    if (highlighted) { highlighted.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+                }
+            })
+            .catch(function(e) {
+                console.error('Error loading orders:', e);
+                container.innerHTML = '<div class="text-center py-5">' +
+                    '<i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>' +
+                    '<p class="text-danger">Errore nel caricamento degli ordini</p>' +
+                    '<button class="btn btn-primary" onclick="loadUserOrders()">Riprova</button></div>';
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            updateNavbarWithoutLang();
+            updateCartCount();
+            loadUserOrders();
+            var token = getToken();
+            if (token) { document.getElementById('notificationNav').style.display = 'block'; }
+        });
+
+        document.addEventListener('click', function(e) {
+            var dropdown = document.getElementById('notificationDropdown');
+            var bell = document.querySelector('.nav-notification');
+            if (dropdown && bell && !dropdown.contains(e.target) && !bell.contains(e.target)) {
+                dropdown.classList.remove('show');
+            }
+        });
+    </script>
+</body>
+</html>
