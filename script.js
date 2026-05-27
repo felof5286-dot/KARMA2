@@ -722,6 +722,9 @@ function checkIfBanned() {
 
 // Setup automatic ban checking - run immediately and frequently
 function setupBanChecking() {
+    // Local static mode: disable anything hitting /api/*
+    if (window.location && window.location.hostname === '127.0.0.1') return;
+
     var token = getToken();
     if (!token) return;
     
@@ -767,9 +770,12 @@ function showNotification(message) {
 
 // Auto-refresh session when page becomes visible
 function setupAutoSessionRefresh() {
+    // Local static mode: disable anything hitting /api/*
+    if (window.location && window.location.hostname === '127.0.0.1') return;
+
     // Refresh on page load
     refreshUserSession();
-    
+
     // Refresh when page becomes visible (after switching tabs or minimizing)
     document.addEventListener('visibilitychange', function() {
         if (!document.hidden) {
@@ -783,7 +789,7 @@ function setupAutoSessionRefresh() {
             }, 500);
         }
     });
-    
+
     // Refresh when window gains focus
     window.addEventListener('focus', function() {
         setTimeout(function() {
@@ -794,12 +800,12 @@ function setupAutoSessionRefresh() {
             }
         }, 500);
     });
-    
+
     // Also poll every 3 seconds to catch any changes
     // Only if on admin page, otherwise use longer interval
     var isAdminPage = window.location.pathname === '/admin';
     var interval = isAdminPage ? 3000 : 10000;
-    
+
     setInterval(function() {
         refreshUserSession();
         // Also refresh admin panel if on admin page

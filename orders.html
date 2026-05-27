@@ -218,11 +218,22 @@
         }
 
         function loadUserOrders() {
-            var token = getToken();
             var container = document.getElementById('ordersListContainer');
             if (!container) return;
-            
-            if (!token) {
+
+            container.innerHTML = '<div class="text-center py-5">' +
+                '<div class="spinner-border text-primary" role="status">' +
+                '<span class="visually-hidden">Caricamento...</span>' +
+                '</div>' +
+                '<p class="mt-3">Caricamento ordini...</p>' +
+                '</div>';
+
+            // --- Local mode: read orders from Firestore (no /api required) ---
+            // We use karmaUser.email as the join key.
+            var user = getUser();
+            var userEmail = user && (user.email || user.customerEmail || user.username);
+
+            if (!userEmail) {
                 container.innerHTML = '<div class="text-center py-5">' +
                     '<i class="fas fa-user-lock text-muted mb-3" style="font-size: 4rem;"></i>' +
                     '<h4 class="mb-3">Devi accedere per vedere i tuoi ordini</h4>' +
@@ -232,81 +243,79 @@
                 return;
             }
 
-            container.innerHTML = '<div class="text-center py-5">' +
-                '<div class="spinner-border text-primary" role="status">' +
-                '<span class="visually-hidden">Caricamento...</span>' +
-                '</div>' +
-                '<p class="mt-3">Caricamento ordini...</p>' +
-                '</div>';
+            // Load all orders and filter locally (works even if we don\'t know the indexed query).
+            firestoreGetDocs('orders')
+                .then(function(allOrders) {
+                    var orders = (allOrders || []).filter(function(o) {
+                        return (o.customerEmail || o.email || o.userEmail || o.user) === userEmail;
+                    });
 
-            fetch('/api/orders', { headers: { 'Authorization': 'Bearer ' + token } })
-            .then(function(r) { return r.json(); })
-            .then(function(orders) {
-                orders.sort(function(a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
+                    orders.sort(function(a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
 
-                if (orders.length === 0) {
-                    container.innerHTML = '<div class="text-center py-5">' +
-                        '<i class="fas fa-shopping-bag fa-4x text-muted mb-3"></i>' +
-                        '<p class="text-muted">Nessun ordine precedente</p>' +
-                        '<a href="/menu" class="btn btn-primary btn-lg"><i class="fas fa-utensils me-2"></i>Ordina Ora</a></div>';
-                    return;
-                }
-
-                var html = '';
-                for (var i = 0; i < orders.length; i++) {
-                    var order = orders[i];
-                    var statusClass = getStatusClass(order.status);
-                    var statusText = getOrderStatusText(order.status);
-                    var isHighlighted = highlightOrderId && order._id === highlightOrderId;
-                    
-                    var itemsHtml = '';
-                    if (order.items && order.items.length > 0) {
-                        for (var j = 0; j < order.items.length; j++) {
-                            var item = order.items[j];
-                            var itemName = item.item ? item.item.name : (item.name || 'Piatto');
-                            itemsHtml += '<div class="order-item">' +
-                                '<span>' + (j + 1) + '. ' + itemName + ' x' + item.quantity + '</span>' +
-                                '<span>EUR ' + (item.price * item.quantity).toFixed(2) + '</span></div>';
-                        }
+                    if (orders.length === 0) {
+                        container.innerHTML = '<div class="text-center py-5">' +
+                            '<i class="fas fa-shopping-bag fa-4x text-muted mb-3"></i>' +
+                            '<p class="text-muted">Nessun ordine precedente</p>' +
+                            '<a href="/menu" class="btn btn-primary btn-lg"><i class="fas fa-utensils me-2"></i>Ordina Ora</a></div>';
+                        return;
                     }
 
-                    html += '<div class="card order-card ' + (isHighlighted ? 'border-primary' : '') + '" ' + (isHighlighted ? 'id="highlightedOrder"' : '') + '>' +
-                        '<div class="card-body">' +
-                        '<div class="row">' +
-                        '<div class="col-md-8">' +
-                        '<div class="d-flex justify-content-between align-items-start mb-3">' +
-                        '<div><h5 class="card-title mb-1"><i class="fas fa-receipt me-2"></i>' + order.orderId + '</h5>' +
-                        '<small class="text-muted">' + new Date(order.createdAt).toLocaleString('it-IT') + '</small></div>' +
-                        '<span class="status-badge ' + statusClass + '">' + statusText + '</span></div>' +
-                        '<div class="order-details-card">' +
-                        '<h6 class="mb-3"><i class="fas fa-utensils me-2"></i>Dettagli Ordine:</h6>' +
-                        itemsHtml +
-                        '<div class="order-item mt-3 pt-2 border-top">' +
-                        '<strong>Totale</strong>' +
-                        '<strong style="color: #8B0000;">EUR ' + (order.total || 0).toFixed(2) + '</strong></div></div></div>' +
-                        '<div class="col-md-4 mt-3 mt-md-0">' +
-                        '<div class="bg-light rounded p-3">' +
-                        '<h6 class="mb-3"><i class="fas fa-user me-2"></i>Info Consegna:</h6>' +
-                        '<p class="mb-1"><strong>Nome:</strong> ' + (order.customerName || '-') + '</p>' +
-                        '<p class="mb-1"><strong>Telefono:</strong> ' + (order.customerPhone || '-') + '</p>' +
-                        '<p class="mb-0"><strong>Indirizzo:</strong> ' + (order.customerAddress || '-') + '</p>' +
-                        (order.notes ? '<p class="mt-2 text-muted small"><i class="fas fa-sticky-note me-1"></i>' + order.notes + '</p>' : '') +
-                        '</div></div></div></div>';
-                }
-                container.innerHTML = html;
-                
-                if (isHighlighted) {
-                    var highlighted = document.getElementById('highlightedOrder');
-                    if (highlighted) { highlighted.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
-                }
-            })
-            .catch(function(e) {
-                console.error('Error loading orders:', e);
-                container.innerHTML = '<div class="text-center py-5">' +
-                    '<i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>' +
-                    '<p class="text-danger">Errore nel caricamento degli ordini</p>' +
-                    '<button class="btn btn-primary" onclick="loadUserOrders()">Riprova</button></div>';
-            });
+                    var html = '';
+                    for (var i = 0; i < orders.length; i++) {
+                        var order = orders[i];
+                        var statusClass = getStatusClass(order.status);
+                        var statusText = getOrderStatusText(order.status);
+                        var isHighlighted = highlightOrderId && (order._id === highlightOrderId || order.orderId === highlightOrderId);
+
+                        var itemsHtml = '';
+                        if (order.items && order.items.length > 0) {
+                            for (var j = 0; j < order.items.length; j++) {
+                                var item = order.items[j];
+                                var itemName = item.item && item.item.name ? item.item.name : (item.name || 'Piatto');
+                                var itemTotal = (item.price || 0) * (item.quantity || 1);
+                                itemsHtml += '<div class="order-item">' +
+                                    '<span>' + (j + 1) + '. ' + itemName + ' x' + (item.quantity || 1) + '</span>' +
+                                    '<span>EUR ' + itemTotal.toFixed(2) + '</span></div>';
+                            }
+                        }
+
+                        html += '<div class="card order-card ' + (isHighlighted ? 'border-primary' : '') + '" ' + (isHighlighted ? 'id="highlightedOrder"' : '') + '>' +
+                            '<div class="card-body">' +
+                            '<div class="row">' +
+                            '<div class="col-md-8">' +
+                            '<div class="d-flex justify-content-between align-items-start mb-3">' +
+                            '<div><h5 class="card-title mb-1"><i class="fas fa-receipt me-2"></i>' + (order.orderId || order._id || '-') + '</h5>' +
+                            '<small class="text-muted">' + (order.createdAt ? new Date(order.createdAt).toLocaleString('it-IT') : '') + '</small></div>' +
+                            '<span class="status-badge ' + statusClass + '">' + statusText + '</span></div>' +
+                            '<div class="order-details-card">' +
+                            '<h6 class="mb-3"><i class="fas fa-utensils me-2"></i>Dettagli Ordine:</h6>' +
+                            itemsHtml +
+                            '<div class="order-item mt-3 pt-2 border-top">' +
+                            '<strong>Totale</strong>' +
+                            '<strong style="color: #8B0000;">EUR ' + (order.total || 0).toFixed(2) + '</strong></div></div></div>' +
+                            '<div class="col-md-4 mt-3 mt-md-0">' +
+                            '<div class="bg-light rounded p-3">' +
+                            '<h6 class="mb-3"><i class="fas fa-user me-2"></i>Info Consegna:</h6>' +
+                            '<p class="mb-1"><strong>Nome:</strong> ' + (order.customerName || '-') + '</p>' +
+                            '<p class="mb-1"><strong>Telefono:</strong> ' + (order.customerPhone || '-') + '</p>' +
+                            '<p class="mb-0"><strong>Indirizzo:</strong> ' + (order.customerAddress || '-') + '</p>' +
+                            (order.notes ? '<p class="mt-2 text-muted small"><i class="fas fa-sticky-note me-1"></i>' + order.notes + '</p>' : '') +
+                            '</div></div></div></div>';
+                    }
+                    container.innerHTML = html;
+
+                    if (isHighlighted) {
+                        var highlighted = document.getElementById('highlightedOrder');
+                        if (highlighted) { highlighted.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+                    }
+                })
+                .catch(function(e) {
+                    console.error('Error loading orders (Firestore):', e);
+                    container.innerHTML = '<div class="text-center py-5">' +
+                        '<i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>' +
+                        '<p class="text-danger">Errore nel caricamento degli ordini</p>' +
+                        '<button class="btn btn-primary" onclick="loadUserOrders()">Riprova</button></div>';
+                });
         }
 
         document.addEventListener('DOMContentLoaded', function() {
