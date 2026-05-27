@@ -831,4 +831,4 @@ document.addEventListener('DOMContentLoaded', function() {
     setupAutoSessionRefresh();
     // Setup real-time ban checking - kicks user out immediately when banned
     setupBanChecking();
-});
+});}
