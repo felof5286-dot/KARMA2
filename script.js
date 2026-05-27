@@ -853,6 +853,7 @@ function loadMenu() {
             console.error('Error loading menu from Firestore:', e);
             menuGrid.innerHTML = '<div class="col-12 text-center"><p>تعذر تحميل القائمة حالياً</p></div>';
         });
+}
 
 // Render menu items
 function renderMenuItems(items) {
@@ -910,4 +911,4 @@ document.addEventListener('DOMContentLoaded', function() {
     setupAutoSessionRefresh();
     // Setup real-time ban checking - kicks user out immediately when banned
     setupBanChecking();
-});}
+});
