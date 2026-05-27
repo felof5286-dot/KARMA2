@@ -869,6 +869,9 @@ function loadMenu() {
 
     if (!menuGrid) return;
 
+    // Hard-disable any legacy /api-based menu loading.
+    // Always show data from Firestore (if available) or local fallback.
+
     // Show loading
     menuGrid.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">جاري التحميل...</span></div><p class="mt-3">جاري تحميل القائمة...</p></div>';
 
